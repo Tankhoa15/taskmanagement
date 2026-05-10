@@ -9,6 +9,8 @@ services:
     envVars:
       - key: QUARKUS_PROFILE
         value: prod
+      - key: DATABASE_URL
+        sync: false
       - key: DB_HOST
         sync: false
       - key: DB_PORT

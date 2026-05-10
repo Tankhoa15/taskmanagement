@@ -10,8 +10,11 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 COPY --from=build /workspace/target/quarkus-app/ ./
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 ENV QUARKUS_HTTP_HOST=0.0.0.0
+ENV QUARKUS_PROFILE=prod
 EXPOSE 10000
 
-CMD ["sh", "-c", "java -Dquarkus.http.port=${PORT:-10000} -jar quarkus-run.jar"]
+CMD ["./docker-entrypoint.sh"]
