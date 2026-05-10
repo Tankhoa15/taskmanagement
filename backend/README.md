@@ -55,18 +55,11 @@ Client (React/Vue/Mobile)
 ## Prerequisites
 
 - Java 21
-- Docker & Docker Compose
 - Maven 3.9+
 
 ## Getting Started
 
-### 1. Start Infrastructure
-
-```bash
-docker-compose up -d postgres rabbitmq kafka redis
-```
-
-### 2. Configure Environment
+### 1. Configure Environment
 
 Create `backend/.env` file:
 
@@ -100,7 +93,7 @@ MAIL_PASSWORD=your-app-password
 MAIL_FROM=noreply@taskmanagement.com
 ```
 
-### 3. Generate JWT Keys
+### 2. Generate JWT Keys
 
 ```bash
 # Generate private key
@@ -116,7 +109,7 @@ openssl rsa -in src/main/resources/privateKey.pem -pubout \
   -outform PEM -out src/main/resources/publicKey.pem
 ```
 
-### 4. Run Application
+### 3. Run Application
 
 Development mode:
 ```bash
@@ -203,7 +196,7 @@ OPEN -> PENDING -> PROCESS -> DONE
 
 ### Build Native Image
 ```bash
-./mvnw package -Pnative -Dquarkus.native.container-build=true
+./mvnw package -Pnative
 ```
 
 ## License

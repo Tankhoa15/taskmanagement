@@ -38,8 +38,6 @@ application-local.yaml
 !**/application-local.properties
 !**/application-local.yml
 !**/application-local.yaml
-/Dockerfile
-docker-compose.override.yml
 /start.sh
 /start-dev.sh
 /README.md
@@ -53,6 +51,4 @@ docker-compose.override.yml
 !**/src/main/resources/application-prod.properties
 !**/src/main/resources/application.properties
 !**/pom.xml
-!**/Dockerfile
-!**/docker-compose.yml
 !**/.env.example

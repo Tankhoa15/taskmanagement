@@ -23,13 +23,7 @@ cp .env.example .env
 # - MAIL credentials
 ```
 
-### 3. Start Infrastructure
-
-```bash
-docker-compose up -d postgres rabbitmq kafka redis
-```
-
-### 4. Run Services
+### 3. Run Services
 
 ```bash
 # Backend (port 8080)
@@ -71,9 +65,7 @@ taskmanagement/
 │   ├── USER_GUIDE.md   # User guide + QC checklist
 │   └── PRODUCT_OWNER.md # PO documentation
 │
-├── .github/workflows/  # CI/CD pipelines
-├── docker-compose.yml  # Infrastructure (dev)
-└── docker-compose.prod.yml # Production
+└── .github/workflows/  # CI/CD pipelines
 ```
 
 ---
@@ -167,22 +159,6 @@ npx expo build:ios
 
 ---
 
-## 🐳 Docker
-
-### Infrastructure Only
-
-```bash
-docker-compose up -d postgres rabbitmq kafka redis
-```
-
-### Full Stack (Production)
-
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
----
-
 ## 🔐 Environment Variables
 
 ```env
@@ -265,18 +241,6 @@ Tự động chạy khi có push/PR:
 - Build Backend (Java 21)
 - Build Frontend Web
 - Type Check Mobile
-- Docker Build
-
-### Manual Deploy
-
-```bash
-# Build Docker image
-cd backend
-docker build -t task-management-backend .
-
-# Push to registry
-docker push your-registry/task-management-backend:latest
-```
 
 ---
 
