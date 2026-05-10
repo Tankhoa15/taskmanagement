@@ -80,13 +80,13 @@
         <!-- RabbitMQ Messaging -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-messaging-rabbitmq</artifactId>
+            <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
         </dependency>
 
         <!-- Kafka Messaging -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-messaging-kafka</artifactId>
+            <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
         </dependency>
 
         <!-- Mail Service -->
