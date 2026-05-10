@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { taskService } from '../services/taskService'
-import { userService } from '../services/userService'
 import { useAuthStore } from '../store/authStore'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -15,12 +14,10 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Edit,
-  Trash2,
   Loader2
 } from 'lucide-react'
 import clsx from 'clsx'
-import type { Task, TaskStatus } from '../types'
+import type { TaskStatus } from '../types'
 
 const statusConfig: Record<TaskStatus, { label: string; color: string; icon: any }> = {
   OPEN: { label: 'Mới', color: 'bg-blue-100 text-blue-800', icon: Clock },
@@ -39,7 +36,6 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const [showCancelModal, setShowCancelModal] = useState(false)

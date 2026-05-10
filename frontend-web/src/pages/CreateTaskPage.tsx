@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
@@ -6,12 +5,10 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { taskService } from '../services/taskService'
 import { userService } from '../services/userService'
-import { useAuthStore } from '../store/authStore'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Calendar, User, AlertCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import clsx from 'clsx'
-import type { Task, TaskStatus, CreateTaskRequest } from '../types'
+import type { CreateTaskRequest } from '../types'
 
 const schema = yup.object({
   title: yup.string().required('Tiêu đề là bắt buộc').min(3, 'Tối thiểu 3 ký tự'),
@@ -27,7 +24,6 @@ type FormData = yup.InferType<typeof schema>
 
 export default function CreateTaskPage() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
   const queryClient = useQueryClient()
 
   const { data: users = [] } = useQuery({
@@ -47,7 +43,7 @@ export default function CreateTaskPage() {
     },
   })
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
     resolver: yupResolver(schema),
     defaultValues: {
       priority: 'MEDIUM',

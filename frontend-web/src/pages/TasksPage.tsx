@@ -9,8 +9,7 @@ import {
   Filter, 
   Search,
   Calendar,
-  User,
-  ChevronDown
+  User
 } from 'lucide-react'
 import clsx from 'clsx'
 import type { TaskStatus, Task } from '../types'
@@ -49,7 +48,6 @@ export default function TasksPage() {
   const navigate = useNavigate()
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'ALL'>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ['tasks', 'my'],
