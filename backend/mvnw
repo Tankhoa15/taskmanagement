@@ -1,0 +1,25 @@
+#!/bin/sh
+# Maven Wrapper script
+
+# Resolve project base directory
+BASEDIR=$(dirname "$0")
+MAVEN_PROJECTBASEDIR=${MAVEN_PROJECTBASEDIR:-"$BASEDIR"}
+
+# Check Java
+if [ -n "$JAVA_HOME" ] ; then
+    JAVA_CMD="$JAVA_HOME/bin/java"
+else
+    JAVA_CMD="java"
+fi
+
+# Download Maven if needed
+MAVEN_VERSION=3.9.6
+MAVEN_HOME="$MAVEN_PROJECTBASEDIR/.mvn/wrapper"
+MAVEN_JAR="$MAVEN_HOME/apache-maven-wrapper.jar"
+
+if [ ! -f "$MAVEN_JAR" ]; then
+    mkdir -p "$MAVEN_HOME"
+    curl -sL "https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/$MAVEN_VERSION/maven-wrapper-$MAVEN_VERSION.jar" -o "$MAVEN_JAR"
+fi
+
+exec "$JAVA_CMD" -jar "$MAVEN_JAR" "$@"

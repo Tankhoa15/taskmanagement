@@ -1,0 +1,211 @@
+# Application
+quarkus:
+  application:
+    name: task-management
+  http:
+    port: 8080
+    host: 0.0.0.0
+    cors:
+      ~: true
+      origins: "*"
+      methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      headers: accept,authorization,content-type,x-requested-with
+      exposed-headers: location,link
+      access-control-max-age: 24H
+
+  # Database Configuration
+  datasource:
+    db-kind: postgresql
+    username: ${DB_USERNAME:taskuser}
+    password: ${DB_PASSWORD:taskpass123}
+    jdbc:
+      url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:taskmanagement}
+      max-size: 20
+      min-size: 5
+
+  # Hibernate ORM
+  hibernate-orm:
+    database:
+      generation: none
+    log:
+      sql: false
+    jdbc:
+      timezone: Asia/Ho_Chi_Minh
+
+  # Flyway Migration
+  flyway:
+    migrate-at-start: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  # JWT Security
+  smallrye-jwt:
+    enabled: true
+
+  # OIDC Configuration (Google OAuth2)
+  oidc:
+    enabled: true
+    auth-server-url: https://accounts.google.com
+    client-id: ${GOOGLE_CLIENT_ID:your-client-id}
+    client-secret: ${GOOGLE_CLIENT_SECRET:your-client-secret}
+    credentials:
+      secret: ${GOOGLE_CLIENT_SECRET:your-client-secret}
+    tls:
+      verification: none
+    token:
+      issuer: any
+
+  # Mail Configuration
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:noreply@taskmanagement.com}
+    password: ${MAIL_PASSWORD:mailpassword}
+    from: ${MAIL_FROM:noreply@taskmanagement.com}
+    auth-methods: DIGEST-MD5 CRAM-SHA256 CRAM-SHA1 CRAM-MD5 PLAIN LOGIN
+    start-tls: REQUIRED
+
+# Messaging - RabbitMQ
+mp:
+  messaging:
+    incoming:
+      task-created-email:
+        connector: smallrye-rabbitmq
+        queue:
+          name: task.created.email
+          durable: true
+        exchange:
+          name: task.exchange
+          type: direct
+          declare: true
+        routing-keys: task.created
+        host: ${RABBITMQ_HOST:localhost}
+        port: ${RABBITMQ_PORT:5672}
+        username: ${RABBITMQ_USERNAME:guest}
+        password: ${RABBITMQ_PASSWORD:guest}
+
+      task-deadline-warning:
+        connector: smallrye-rabbitmq
+        queue:
+          name: task.deadline.warning
+          durable: true
+        exchange:
+          name: task.exchange
+          type: direct
+          declare: true
+        routing-keys: task.deadline
+        host: ${RABBITMQ_HOST:localhost}
+        port: ${RABBITMQ_PORT:5672}
+        username: ${RABBITMQ_USERNAME:guest}
+        password: ${RABBITMQ_PASSWORD:guest}
+
+      task-done-notification:
+        connector: smallrye-rabbitmq
+        queue:
+          name: task.done.notification
+          durable: true
+        exchange:
+          name: task.exchange
+          type: direct
+          declare: true
+        routing-keys: task.done
+        host: ${RABBITMQ_HOST:localhost}
+        port: ${RABBITMQ_PORT:5672}
+        username: ${RABBITMQ_USERNAME:guest}
+        password: ${RABBITMQ_PASSWORD:guest}
+
+    outgoing:
+      task-events-out:
+        connector: smallrye-rabbitmq
+        exchange:
+          name: task.exchange
+          type: direct
+          declare: true
+        default-routing-key: task.event
+        host: ${RABBITMQ_HOST:localhost}
+        port: ${RABBITMQ_PORT:5672}
+        username: ${RABBITMQ_USERNAME:guest}
+        password: ${RABBITMQ_PASSWORD:guest}
+
+# Kafka Configuration
+kafka:
+  bootstrap:
+    servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:9092}
+
+# MP Messaging Kafka
+"%prod":
+  mp:
+    messaging:
+      outgoing:
+        task-events-kafka:
+          connector: smallrye-kafka
+          topic: task-events
+          key:
+            serializer: org.apache.kafka.common.serialization.StringSerializer
+          value:
+            serializer: io.quarkus.kafka.client.serialization.ObjectMapperSerializer
+
+      incoming:
+        task-events-kafka-consumer:
+          connector: smallrye-kafka
+          topic: task-events
+          group:
+            id: task-management-audit
+          key:
+            deserializer: org.apache.kafka.common.serialization.StringDeserializer
+          value:
+            deserializer: org.apache.kafka.common.serialization.StringDeserializer
+          auto:
+            offset:
+              reset: earliest
+          value:
+            deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+"%dev":
+  mp:
+    messaging:
+      outgoing:
+        task-events-kafka:
+          connector: smallrye-in-memory
+
+      incoming:
+        task-events-kafka-consumer:
+          connector: smallrye-in-memory
+
+# OpenAPI / Swagger UI
+quarkus:
+  swaggerui:
+    always-include: true
+    path: /swagger-ui
+
+  smallrye-openapi:
+    path: /openapi
+    info-title: Task Management API
+    info-version: 1.0.0
+    info-description: Enterprise Task Management Backend API
+
+# Scheduler Configuration
+quarkus:
+  scheduler:
+    enabled: true
+
+# Logging
+quarkus:
+  log:
+    level: INFO
+    category:
+      "com.taskmanagement":
+        level: DEBUG
+      "org.hibernate.SQL":
+        level: DEBUG
+
+# Custom Application Properties
+task-management:
+  email:
+    enabled: ${EMAIL_ENABLED:true}
+    from-address: ${MAIL_FROM:noreply@taskmanagement.com}
+  scheduler:
+    deadline-check:
+      enabled: true
+      cron: "0 */10 * * * ?" # Every 10 minutes
+      warning-before-minutes: 60 # Send warning 1 hour before deadline

@@ -1,0 +1,111 @@
+Create a production-ready Quarkus backend project.
+
+Requirements:
+- PostgreSQL
+- RabbitMQ
+- Kafka
+- JWT Security
+- Google OAuth2 Login
+- Flyway migration
+- Clean architecture
+- DTO + mapper pattern
+- REST API
+- Task management module
+
+Task fields:
+- title
+- content
+- point
+- priority
+- status
+- startTime
+- endTime
+- assigner
+- assignee
+
+Task statuses:
+OPEN, PENDING, PROCESS, DONE, CANCEL
+
+Features:
+- User assigns task to another user
+- Send email when task created
+- Send warning email before deadline
+- Send email when task done
+
+Use:
+- Quarkus
+- Panache
+- Reactive messaging
+- Docker compose
+- Java 21
+
+Generate:
+- folder structure
+- entities
+- DTOs
+- repositories
+- services
+- controllers
+- messaging producers/consumers
+- docker-compose
+- application.yml
+
+
+# Enterprise Task Management Backend Project
+
+## Overview
+
+Build a production-ready enterprise backend system for task management using Quarkus or Spring Boot.
+
+The system allows users to assign tasks to other users, track task progress, send notifications via email, and process asynchronous events using RabbitMQ and Kafka.
+
+---
+
+# Core Technologies
+
+## Backend
+- Java 21
+- Quarkus (recommended) or Spring Boot
+
+## Database
+- PostgreSQL
+
+## Messaging
+- RabbitMQ
+- Kafka
+
+## Security
+- Google OAuth2 Login
+- JWT Authentication
+
+## Infrastructure
+- Docker Compose
+
+## Additional
+- Flyway Migration
+- Mail Service
+- Scheduler
+- REST API
+- Clean Architecture
+- DTO + Mapper Pattern
+
+---
+
+# Business Features
+
+## Authentication
+
+Users login using Google account.
+
+Flow:
+
+```text
+Frontend
+    ->
+Google Login
+    ->
+Backend verify Google token
+    ->
+Generate JWT
+    ->
+Return access token
