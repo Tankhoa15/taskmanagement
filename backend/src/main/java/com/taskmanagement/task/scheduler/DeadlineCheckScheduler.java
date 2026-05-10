@@ -1,10 +1,8 @@
 package com.taskmanagement.task.scheduler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.taskmanagement.notification.mail.EmailService;
 import com.taskmanagement.task.dto.EmailTaskNotification;
 import com.taskmanagement.task.entity.Task;
-import com.taskmanagement.task.entity.TaskEvent;
 import com.taskmanagement.task.repository.TaskRepository;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -15,6 +13,7 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jboss.logging.Logger;
+import io.smallrye.reactive.messaging.rabbitmq.OutgoingRabbitMQMetadata;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -82,7 +81,7 @@ public class DeadlineCheckScheduler {
         try {
             String json = objectMapper.writeValueAsString(notification);
             
-            var metadata = new org.eclipse.microprofile.reactive.messaging.rabbitmq.OutgoingRabbitMQMetadata.Builder()
+            var metadata = new OutgoingRabbitMQMetadata.Builder()
                     .withRoutingKey("task.deadline")
                     .withContentType("application/json")
                     .build();

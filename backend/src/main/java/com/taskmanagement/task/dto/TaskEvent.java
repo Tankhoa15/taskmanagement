@@ -30,6 +30,7 @@ public class TaskEvent implements Serializable {
     private UUID assigneeId;
     private String assigneeEmail;
     private String assigneeName;
+    private Instant completedAt;
     private Instant createdAt;
     private Instant occurredAt;
 
