@@ -41,6 +41,12 @@ jobs:
           VITE_API_URL: ${{ secrets.FRONTEND_API_URL }}
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
 
+      - name: Configure Firebase project
+        run: |
+          node -e "const fs = require('fs'); const projectId = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON).project_id; if (!projectId) { throw new Error('FIREBASE_SERVICE_ACCOUNT is missing project_id'); } fs.writeFileSync('.firebaserc', JSON.stringify({ projects: { default: projectId } }, null, 2) + '\n');"
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
