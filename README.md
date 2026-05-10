@@ -136,6 +136,10 @@ npm run dev
 npm run build
 ```
 
+For deployed builds, set `VITE_API_URL` to the public backend origin before running `npm run build`.
+If this is missing, the web app cannot register or log in from Firebase Hosting because `localhost:8080`
+would refer to the user's own machine, not the backend server.
+
 ### Mobile App
 
 ```bash
@@ -235,6 +239,9 @@ Tự động chạy khi có push/PR:
 - Build Backend (Java 21)
 - Build Frontend Web
 - Type Check Mobile
+
+Firebase Hosting deployments require the `FRONTEND_API_URL` GitHub secret. Set it to the public backend
+origin, for example `https://api.example.com`; the workflow passes it to Vite as `VITE_API_URL`.
 
 ---
 
