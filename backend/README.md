@@ -8,7 +8,7 @@ Enterprise Task Management System built with Quarkus, PostgreSQL, RabbitMQ, and 
 - **Database**: PostgreSQL 16
 - **Message Broker**: RabbitMQ 3.13
 - **Event Streaming**: Apache Kafka 7.5
-- **Security**: Google OAuth2 + JWT
+- **Security**: Email/password + JWT
 - **Migration**: Flyway
 - **ORM**: Hibernate Panache
 
@@ -41,7 +41,7 @@ Client (React/Vue/Mobile)
 
 ## Features
 
-- User authentication via Google OAuth2
+- User authentication via email/password
 - JWT token-based authorization
 - Task CRUD operations
 - Task assignment between users
@@ -80,10 +80,6 @@ RABBITMQ_PASSWORD=guest
 # Kafka
 KAFKA_HOST=localhost
 KAFKA_PORT=9092
-
-# Google OAuth2 (get from Google Cloud Console)
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-client-secret
 
 # Mail (optional)
 MAIL_HOST=smtp.gmail.com
@@ -125,7 +121,8 @@ java -jar target/quarkus-app/quarkus-run.jar
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/google` - Authenticate with Google token
+- `POST /api/auth/register` - Register with email/password
+- `POST /api/auth/login` - Authenticate with email/password
 
 ### Tasks
 - `POST /api/tasks` - Create new task
@@ -184,8 +181,6 @@ OPEN -> PENDING -> PROCESS -> DONE
 | RABBITMQ_PORT | RabbitMQ port | 5672 |
 | KAFKA_HOST | Kafka host | localhost |
 | KAFKA_PORT | Kafka port | 9092 |
-| GOOGLE_CLIENT_ID | Google OAuth2 Client ID | - |
-| GOOGLE_CLIENT_SECRET | Google OAuth2 Client Secret | - |
 
 ## Development
 

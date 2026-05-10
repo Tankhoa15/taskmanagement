@@ -71,12 +71,6 @@
             <artifactId>quarkus-smallrye-jwt-build</artifactId>
         </dependency>
 
-        <!-- Google OAuth2 -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc</artifactId>
-        </dependency>
-
         <!-- RabbitMQ Messaging -->
         <dependency>
             <groupId>io.quarkus</groupId>

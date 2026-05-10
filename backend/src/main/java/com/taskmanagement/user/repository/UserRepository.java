@@ -14,10 +14,6 @@ public class UserRepository implements PanacheRepositoryBase<User, UUID> {
         return find("email", email).firstResultOptional();
     }
     
-    public Optional<User> findByGoogleId(String googleId) {
-        return find("googleId", googleId).firstResultOptional();
-    }
-    
     public boolean existsByEmail(String email) {
         return count("email", email) > 0;
     }

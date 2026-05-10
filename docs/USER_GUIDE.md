@@ -20,7 +20,7 @@
 
 | Tính năng | Mô tả |
 |------------|--------|
-| ✅ Đăng nhập Google | Xác thực qua tài khoản Google |
+| ✅ Đăng nhập/đăng ký | Xác thực bằng email và mật khẩu |
 | ✅ Tạo công việc | Tạo và giao việc cho đồng nghiệp |
 | ✅ Theo dõi tiến độ | Cập nhật trạng thái công việc |
 | ✅ Email thông báo | Nhận email khi có công việc mới |
@@ -54,13 +54,13 @@
 ### Cách Đăng Nhập
 
 1. Truy cập website: http://localhost:3000
-2. Click nút **"Đăng nhập với Google"**
-3. Chọn tài khoản Google của bạn
+2. Nhập email và mật khẩu rồi click **"Đăng nhập"**
+3. Hoặc chọn **"Đăng ký mới"** nếu chưa có tài khoản
 4. Hệ thống sẽ tự động đăng nhập
 
 ### Lưu Ý Quan Trọng
 
-- Cần có tài khoản Google để đăng nhập
+- Cần có tài khoản nội bộ để đăng nhập
 - Lần đầu đăng nhập, hệ thống sẽ tự tạo tài khoản mới
 - Token đăng nhập có hiệu lực **24 giờ**
 - Sau 24 giờ, cần đăng nhập lại
@@ -241,7 +241,7 @@ Nội dung:
 
 | STT | Test Case | Expected Result | Status |
 |-----|-----------|----------------|--------|
-| 1.1 | Đăng nhập với Google hợp lệ | Đăng nhập thành công, chuyển đến Dashboard | ☐ |
+| 1.1 | Đăng nhập email/password hợp lệ | Đăng nhập thành công, chuyển đến Dashboard | ☐ |
 | 1.2 | Đăng nhập với email chưa đăng ký | Tự động tạo tài khoản mới | ☐ |
 | 1.3 | Đăng nhập với token hết hạn | Yêu cầu đăng nhập lại | ☐ |
 | 1.4 | Đăng xuất | Xóa token, quay về trang login | ☐ |
@@ -321,8 +321,8 @@ Nội dung:
 
 | STT | Test Case | Expected Result | Status |
 |-----|-----------|----------------|--------|
-| 7.1 | Login với Google trên iOS | Đăng nhập thành công | ☐ |
-| 7.2 | Login với Google trên Android | Đăng nhập thành công | ☐ |
+| 7.1 | Login email/password trên iOS | Đăng nhập thành công | ☐ |
+| 7.2 | Login email/password trên Android | Đăng nhập thành công | ☐ |
 | 7.3 | Tạo task trên mobile | Task được tạo thành công | ☐ |
 | 7.4 | Update status trên mobile | Status thay đổi | ☐ |
 | 7.5 | Pull to refresh | Cập nhật danh sách | ☐ |

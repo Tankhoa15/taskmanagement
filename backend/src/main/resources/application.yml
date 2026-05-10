@@ -42,19 +42,6 @@ quarkus:
   smallrye-jwt:
     enabled: true
 
-  # OIDC Configuration (Google OAuth2)
-  oidc:
-    enabled: true
-    auth-server-url: https://accounts.google.com
-    client-id: ${GOOGLE_CLIENT_ID:your-client-id}
-    client-secret: ${GOOGLE_CLIENT_SECRET:your-client-secret}
-    credentials:
-      secret: ${GOOGLE_CLIENT_SECRET:your-client-secret}
-    tls:
-      verification: none
-    token:
-      issuer: any
-
   # Mail Configuration
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}

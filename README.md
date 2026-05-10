@@ -17,10 +17,7 @@ cd taskmanagement
 # Copy environment template
 cp .env.example .env
 
-# Edit .env with your credentials:
-# - GOOGLE_CLIENT_ID (from Google Cloud Console)
-# - GOOGLE_CLIENT_SECRET
-# - MAIL credentials
+# Edit .env with your local database, messaging, and mail credentials
 ```
 
 ### 3. Run Services
@@ -80,13 +77,13 @@ taskmanagement/
 | Event Streaming | Apache Kafka | 7.5 |
 | Frontend Web | React + Vite | 18 / 5 |
 | Mobile App | React Native + Expo | 50 |
-| Auth | Google OAuth2 + JWT | - |
+| Auth | Email/password + JWT | - |
 
 ---
 
 ## ✨ Features
 
-- ✅ **Authentication** - Login với Google OAuth2
+- ✅ **Authentication** - Đăng nhập/đăng ký bằng email và mật khẩu
 - ✅ **Task CRUD** - Tạo, đọc, cập nhật công việc
 - ✅ **Task Assignment** - Giao việc cho đồng nghiệp
 - ✅ **Status Tracking** - Theo dõi trạng thái: OPEN → PENDING → PROCESS → DONE
@@ -177,10 +174,6 @@ RABBITMQ_PORT=5672
 KAFKA_HOST=localhost
 KAFKA_PORT=9092
 
-# Google OAuth2
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-client-secret
-
 # Mail
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
@@ -194,7 +187,8 @@ MAIL_PASSWORD=your-app-password
 
 ### Authentication
 ```
-POST /api/auth/google    # Login with Google token
+POST /api/auth/register  # Register with email/password
+POST /api/auth/login     # Login with email/password
 ```
 
 ### Tasks

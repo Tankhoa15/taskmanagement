@@ -1,7 +1,8 @@
 package com.taskmanagement.auth.controller;
 
 import com.taskmanagement.auth.dto.AuthResponse;
-import com.taskmanagement.auth.dto.GoogleAuthRequest;
+import com.taskmanagement.auth.dto.LoginRequest;
+import com.taskmanagement.auth.dto.RegisterRequest;
 import com.taskmanagement.auth.service.AuthService;
 import com.taskmanagement.common.response.ApiResponse;
 import jakarta.inject.Inject;
@@ -22,12 +23,24 @@ public class AuthController {
     AuthService authService;
     
     @POST
-    @Path("/google")
-    public Response authenticateWithGoogle(@Valid GoogleAuthRequest request) {
-        LOG.infof("Received Google authentication request");
+    @Path("/register")
+    public Response register(@Valid RegisterRequest request) {
+        LOG.infof("Received registration request");
         
-        AuthResponse response = authService.authenticateWithGoogle(request);
+        AuthResponse response = authService.register(request);
         
+        return Response.status(Response.Status.CREATED)
+                .entity(ApiResponse.success("Registration successful", response))
+                .build();
+    }
+
+    @POST
+    @Path("/login")
+    public Response login(@Valid LoginRequest request) {
+        LOG.infof("Received login request");
+
+        AuthResponse response = authService.login(request);
+
         return Response.ok(ApiResponse.success("Authentication successful", response)).build();
     }
 }

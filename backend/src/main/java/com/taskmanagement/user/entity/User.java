@@ -31,8 +31,8 @@ public class User extends PanacheEntityBase {
     @Column(name = "picture_url")
     private String pictureUrl;
 
-    @Column(name = "google_id", unique = true)
-    private String googleId;
+    @Column(name = "password_hash")
+    private String passwordHash;
 
     @Column(nullable = false)
     @Builder.Default
@@ -57,7 +57,4 @@ public class User extends PanacheEntityBase {
         return find("email", email).firstResult();
     }
 
-    public static User findByGoogleId(String googleId) {
-        return find("googleId", googleId).firstResult();
-    }
 }

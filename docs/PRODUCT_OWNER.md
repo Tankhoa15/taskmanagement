@@ -39,7 +39,7 @@
 | Database | PostgreSQL 16 |
 | Message Queue | RabbitMQ 3.13 |
 | Event Streaming | Apache Kafka 7.5 |
-| Authentication | Google OAuth2 + JWT |
+| Authentication | Email/password + JWT |
 
 ---
 
@@ -63,7 +63,7 @@
 
 | STT | Tính năng | Priority |
 |-----|-----------|----------|
-| 1 | Authentication qua Google | Must |
+| 1 | Authentication bằng email/password | Must |
 | 2 | CRUD Task | Must |
 | 3 | Giao việc cho user khác | Must |
 | 4 | Cập nhật trạng thái task | Must |
@@ -90,10 +90,10 @@
 
 ### US-001: Đăng Nhập Hệ Thống
 
-**Mô tả:** Là một user, tôi muốn đăng nhập bằng tài khoản Google để sử dụng hệ thống.
+**Mô tả:** Là một user, tôi muốn đăng nhập bằng email và mật khẩu để sử dụng hệ thống.
 
 **Acceptance Criteria:**
-- [ ] User có thể đăng nhập với Google account
+- [ ] User có thể đăng nhập bằng email và mật khẩu
 - [ ] Hệ thống tạo user mới nếu chưa tồn tại
 - [ ] User nhận được JWT token sau khi đăng nhập
 - [ ] Token có hiệu lực 24 giờ
@@ -218,7 +218,7 @@
 
 | ID | Yêu cầu | Mô tả | Priority |
 |----|---------|-------|----------|
-| FR-001.1 | Google Login | Đăng nhập qua Google OAuth2 | Must |
+| FR-001.1 | Email/password Login | Đăng nhập/đăng ký bằng email và mật khẩu | Must |
 | FR-001.2 | JWT Token | Generate JWT sau khi login | Must |
 | FR-001.3 | Token Expiry | Token hết hạn sau 24h | Must |
 | FR-001.4 | Auto-create User | Tạo user mới nếu chưa tồn tại | Must |
@@ -275,7 +275,7 @@
 
 | Requirement | Implementation |
 |-------------|----------------|
-| Authentication | Google OAuth2 + JWT |
+| Authentication | Email/password + JWT |
 | Data Encryption | HTTPS (TLS 1.2+) |
 | Input Validation | Server-side validation |
 | SQL Injection | Parameterized queries (Panache) |
@@ -303,7 +303,7 @@
 │ email           │   │   │ title           │
 │ name            │   │   │ content         │
 │ picture_url     │   │   │ point           │
-│ google_id      │   │   │ priority        │
+│ password_hash  │   │   │ priority        │
 │ role           │   └───│ assigner_id (FK)│
 │ enabled        │       │ assignee_id (FK)│
 │ created_at      │       │ status          │
@@ -338,7 +338,7 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255),
     picture_url VARCHAR(500),
-    google_id VARCHAR(255) UNIQUE,
+    password_hash VARCHAR(500),
     role VARCHAR(50) NOT NULL DEFAULT 'USER',
     enabled BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -374,13 +374,26 @@ CREATE TABLE tasks (
 
 ### Authentication API
 
-#### POST /api/auth/google
-Login với Google token.
+#### POST /api/auth/register
+Đăng ký bằng email và mật khẩu.
 
 **Request:**
 ```json
 {
-  "googleToken": "string (Google ID token)"
+  "name": "User Name",
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+#### POST /api/auth/login
+Đăng nhập bằng email và mật khẩu.
+
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
 }
 ```
 
@@ -391,7 +404,7 @@ Login với Google token.
   "data": {
     "accessToken": "JWT token",
     "tokenType": "Bearer",
-    "expiresIn": 86400,
+    "expiresIn": 3600,
     "email": "user@example.com",
     "name": "User Name",
     "pictureUrl": "https://..."
@@ -525,7 +538,7 @@ Lấy danh sách tất cả users.
 | Database design | Dev | ☐ |
 | Flyway migrations | Dev | ☐ |
 | User entity & API | Dev | ☐ |
-| Authentication (Google OAuth2) | Dev | ☐ |
+| Authentication (email/password) | Dev | ☐ |
 | Docker Compose setup | Dev | ☐ |
 
 ### Sprint 2: Task Management (2 tuần)
@@ -566,7 +579,7 @@ Lấy danh sách tất cả users.
 
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
-| Google OAuth2 issues | High | Medium | Fallback email/password |
+| Email/password auth issues | High | Medium | Reset mật khẩu hoặc tạo lại tài khoản |
 | Email delivery failures | Medium | Low | Queue retry mechanism |
 | Database performance | Medium | Medium | Connection pooling, indexing |
 | Mobile app rejection | High | Low | Follow App Store guidelines |
@@ -610,8 +623,6 @@ Push/PR → GitHub Actions → Build → Test → Deploy
 | SERVER_USER | SSH username |
 | SERVER_SSH_KEY | SSH private key |
 | FIREBASE_SERVICE_ACCOUNT | Firebase service account |
-| GOOGLE_CLIENT_ID | Google OAuth2 Client ID |
-| GOOGLE_CLIENT_SECRET | Google OAuth2 Client Secret |
 
 ---
 
@@ -624,7 +635,6 @@ Push/PR → GitHub Actions → Build → Test → Deploy
 | Task Status | Trạng thái của công việc (OPEN, PENDING, PROCESS, DONE, CANCEL) |
 | Priority | Mức ưu tiên của công việc |
 | JWT | JSON Web Token - token xác thực |
-| OAuth2 | Giao thức xác thực ủy quyền |
 | Deadline | Thời hạn hoàn thành công việc |
 
 ---

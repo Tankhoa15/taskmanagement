@@ -18,6 +18,12 @@ public class GlobalExceptionHandler implements ExceptionMapper<Exception> {
     public Response toResponse(Exception exception) {
         LOG.error("Exception caught: ", exception);
         
+        if (exception instanceof UnauthorizedException unauthorizedException) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity(ApiResponse.error(unauthorizedException.getMessage(), "UNAUTHORIZED"))
+                    .build();
+        }
+
         if (exception instanceof BusinessException businessException) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(ApiResponse.error(businessException.getMessage(), businessException.getErrorCode()))
@@ -27,12 +33,6 @@ public class GlobalExceptionHandler implements ExceptionMapper<Exception> {
         if (exception instanceof ResourceNotFoundException notFoundException) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(ApiResponse.error(notFoundException.getMessage(), "RESOURCE_NOT_FOUND"))
-                    .build();
-        }
-        
-        if (exception instanceof UnauthorizedException unauthorizedException) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(ApiResponse.error(unauthorizedException.getMessage(), "UNAUTHORIZED"))
                     .build();
         }
         

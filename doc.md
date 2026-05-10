@@ -14,7 +14,7 @@ backend/
 │   ├── auth/                        # Authentication module
 │   │   ├── controller/AuthController.java
 │   │   ├── service/AuthService.java, JwtService.java
-│   │   └── dto/AuthResponse.java, GoogleAuthRequest.java
+│   │   └── dto/AuthResponse.java, LoginRequest.java, RegisterRequest.java
 │   │
 │   ├── user/                        # User module
 │   │   ├── entity/User.java
@@ -56,8 +56,8 @@ backend/
 └── src/test/java/                  # Unit tests
 Các tính năng đã implement
 Tính năng	Mô tả
-Google OAuth2 Login
-Xác thực qua Google token
+Email/Password Login
+Xác thực bằng email và mật khẩu
 JWT Security
 Token-based authentication
 Task CRUD
@@ -77,7 +77,8 @@ Kiểm tra deadline mỗi 10 phút
 Flyway
 Database migration
 API Endpoints
-POST   /api/auth/google              # Đăng nhập Google
+POST   /api/auth/register            # Đăng ký
+POST   /api/auth/login               # Đăng nhập
 POST   /api/tasks                    # Tạo task
 GET    /api/tasks/{id}               # Lấy task theo ID
 GET    /api/tasks/my                 # Lấy task của tôi
@@ -97,7 +98,7 @@ openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in src/main/resources/pr
 openssl rsa -in src/main/resources/privateKey.pem -pubout -out src/main/resources/publicKey.pem
 # 3. Configure .env file
 cp .env.example .env
-# Edit .env with your Google OAuth2 credentials
+# Edit .env with your local credentials
 # 4. Run in dev mode
 ./mvnw quarkus:dev
 Bạn cần thêm thông tin gì không? The user asked me to read the backend.mdc file to understand how to create the project. I've already read it and created the entire project structure. Now let me check if there are any lint errors and verify everything is in place.
@@ -118,7 +119,7 @@ Quarkus 3.8.1 (Java 21)
 PostgreSQL - Database
 RabbitMQ - Email async queue
 Kafka - Audit event streaming
-Google OAuth2 + JWT - Authentication
+Email/password + JWT - Authentication
 Flyway - Database migration
 Docker Compose - Infrastructure
 Kiến trúc:
@@ -130,13 +131,13 @@ Clean Architecture + DDD-lite
 ├── audit/       (Kafka audit logging)
 └── common/      (Shared utilities)
 Flow nghiệp vụ:
-User login → Google OAuth2 → JWT token
+User login → Email/password → JWT token
 Tạo task → Save DB → Publish RabbitMQ → Send email cho assignee
 Deadline check → Scheduler 10 phút → Warning email
 Task done → Email cho assigner + assignee
 
 Project có đầy đủ:
-✅ Authentication với Google OAuth2 + JWT
+✅ Authentication với Email/password + JWT
 ✅ Task CRUD với status: OPEN, PENDING, PROCESS, DONE, CANCEL
 ✅ Task assignment (user giao task cho user khác)
 ✅ Email notifications (tạo task, deadline warning, task done)
@@ -162,7 +163,7 @@ taskmanagement/
 │   │   └── publicKey.pem        # ✅ Generated
 │   └── Dockerfile
 ├── frontend-web/
-│   └── package.json             # ✅ Added @react-oauth/google
+│   └── package.json             # ✅ Email/password auth
 └── frontend-app/
     └── package.json             # ✅ Added AsyncStorage
 🚀 Để chạy project
@@ -178,7 +179,7 @@ Project đã sẵn sàng để chạy! Cần hỗ trợ gì thêm không? The us
 
 Tất cả các issue đã được fix:
 
-✅ @react-oauth/google package
+✅ Email/password login/register
 ✅ JWT RSA keys (privateKey.pem + publicKey.pem)
 ✅ Mobile packages (AsyncStorage)
 ✅ Docker Compose files (dev + prod)

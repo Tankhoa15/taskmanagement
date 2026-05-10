@@ -10,40 +10,39 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
-import * as Google from 'expo-google-app-auth'
 import { useAuthStore } from '../store/authStore'
+import { authService } from '../services/authService'
 
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const { login } = useAuthStore()
 
-  const handleGoogleLogin = async () => {
+  const handleSubmit = async () => {
+    if (!email.trim() || !password.trim() || (isRegistering && !name.trim())) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập đầy đủ thông tin.')
+      return
+    }
+
+    if (isRegistering && password.length < 8) {
+      Alert.alert('Mật khẩu quá ngắn', 'Mật khẩu cần tối thiểu 8 ký tự.')
+      return
+    }
+
     try {
       setLoading(true)
-      
-      const result = await Google.logInAsync({
-        iosClientId: 'your-ios-client-id.apps.googleusercontent.com',
-        androidClientId: 'your-android-client-id.apps.googleusercontent.com',
-        scopes: ['profile', 'email'],
-      })
 
-      if (result.type === 'success') {
-        // In production, send the ID token to backend
-        // For demo, we'll create a mock response
-        await login({
-          accessToken: result.idToken || '',
-          tokenType: 'Bearer',
-          expiresIn: 3600,
-          email: result.user.email || '',
-          name: result.user.name || '',
-          pictureUrl: result.user.photoUrl || '',
-        })
-      } else {
-        Alert.alert('Error', 'Login was cancelled')
-      }
+      const authResponse = isRegistering
+        ? await authService.register(name, email, password)
+        : await authService.login(email, password)
+
+      await login(authResponse)
     } catch (error) {
       console.error('Login error:', error)
-      Alert.alert('Error', 'Failed to login. Please try again.')
+      Alert.alert('Lỗi', isRegistering ? 'Đăng ký thất bại. Vui lòng thử lại.' : 'Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.')
     } finally {
       setLoading(false)
     }
@@ -57,34 +56,66 @@ export default function LoginScreen() {
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Task Manager</Text>
-          <Text style={styles.subtitle}>Quản lý công việc hiệu quả</Text>
+          <Text style={styles.subtitle}>
+            {isRegistering ? 'Tạo tài khoản nội bộ' : 'Đăng nhập bằng email và mật khẩu'}
+          </Text>
         </View>
 
         <View style={styles.form}>
+          {isRegistering && (
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Tên hiển thị"
+              autoCapitalize="words"
+              editable={!loading}
+            />
+          )}
+
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Email"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            editable={!loading}
+          />
+
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            placeholder={isRegistering ? 'Mật khẩu tối thiểu 8 ký tự' : 'Mật khẩu'}
+            secureTextEntry
+            editable={!loading}
+          />
+
           <TouchableOpacity
-            style={styles.googleButton}
-            onPress={handleGoogleLogin}
+            style={styles.primaryButton}
+            onPress={handleSubmit}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#2563eb" />
+              <ActivityIndicator color="#fff" />
             ) : (
-              <>
-                <View style={styles.googleIcon}>
-                  <Text style={styles.googleIconText}>G</Text>
-                </View>
-                <Text style={styles.googleButtonText}>Sign in with Google</Text>
-              </>
+              <Text style={styles.primaryButtonText}>
+                {isRegistering ? 'Đăng ký' : 'Đăng nhập'}
+              </Text>
             )}
           </TouchableOpacity>
-        </View>
 
-        <Text style={styles.terms}>
-          Bằng việc đăng nhập, bạn đồng ý với{' '}
-          <Text style={styles.link}>Điều khoản sử dụng</Text>
-          {' '}và{' '}
-          <Text style={styles.link}>Chính sách bảo mật</Text>
-        </Text>
+          <TouchableOpacity
+            style={styles.switchButton}
+            onPress={() => setIsRegistering((value) => !value)}
+            disabled={loading}
+          >
+            <Text style={styles.switchButtonText}>
+              {isRegistering ? 'Đã có tài khoản? Đăng nhập' : 'Chưa có tài khoản? Đăng ký mới'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   )
@@ -116,7 +147,7 @@ const styles = StyleSheet.create({
   },
   form: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 8,
     padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -124,41 +155,35 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
+  input: {
+    height: 48,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+    fontSize: 16,
+    color: '#111827',
   },
-  googleIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    backgroundColor: '#4285f4',
+  primaryButton: {
+    minHeight: 48,
+    borderRadius: 8,
+    backgroundColor: '#2563eb',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  googleIconText: {
+  primaryButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  googleButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
   },
-  terms: {
-    textAlign: 'center',
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 24,
+  switchButton: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  switchButtonText: {
+    color: '#2563eb',
     fontSize: 12,
-  },
-  link: {
-    textDecorationLine: 'underline',
+    fontWeight: '600',
   },
 })

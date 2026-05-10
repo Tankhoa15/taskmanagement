@@ -21,7 +21,7 @@
 ## Project Overview
 
 Enterprise Task Management System cho phép:
-- Đăng nhập qua Google OAuth2
+- Đăng nhập/đăng ký bằng email và mật khẩu
 - Tạo và quản lý công việc
 - Giao công việc cho người khác
 - Theo dõi tiến độ công việc
@@ -41,7 +41,7 @@ Enterprise Task Management System cho phép:
 | Message Queue | RabbitMQ | 3.13 |
 | Event Streaming | Apache Kafka | 7.5 |
 | Migration | Flyway | - |
-| Security | JWT + Google OAuth2 | - |
+| Security | JWT + email/password | - |
 
 ### Frontend Web
 | Component | Technology | Version |
@@ -125,8 +125,6 @@ cd taskmanagement
 cp .env.example .env
 
 # Edit .env with your credentials:
-# - GOOGLE_CLIENT_ID (from Google Cloud Console)
-# - GOOGLE_CLIENT_SECRET
 # - MAIL credentials
 ```
 
@@ -522,13 +520,26 @@ import MyScreen from '../screens/MyScreen'
 
 ### Authentication
 
-#### POST /api/auth/google
-Login với Google token
+#### POST /api/auth/register
+Đăng ký bằng email và mật khẩu.
 
 **Request:**
 ```json
 {
-  "googleToken": "string (Google ID token)"
+  "name": "User Name",
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+#### POST /api/auth/login
+Đăng nhập bằng email và mật khẩu.
+
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
 }
 ```
 
@@ -540,7 +551,7 @@ Login với Google token
   "data": {
     "accessToken": "JWT token",
     "tokenType": "Bearer",
-    "expiresIn": 86400,
+    "expiresIn": 3600,
     "email": "user@example.com",
     "name": "User Name",
     "pictureUrl": "https://..."
@@ -610,7 +621,7 @@ Lấy danh sách tất cả users
 | email | VARCHAR(255) | UNIQUE, NOT NULL |
 | name | VARCHAR(255) | |
 | picture_url | VARCHAR(500) | |
-| google_id | VARCHAR(255) | UNIQUE |
+| password_hash | VARCHAR(500) | |
 | role | VARCHAR(50) | DEFAULT 'USER' |
 | enabled | BOOLEAN | DEFAULT true |
 | created_at | TIMESTAMPTZ | NOT NULL |
@@ -741,8 +752,6 @@ docker-compose -f ../docker-compose.prod.yml up -d
 | RABBITMQ_PORT | RabbitMQ port | 5672 |
 | KAFKA_HOST | Kafka host | localhost |
 | KAFKA_PORT | Kafka port | 9092 |
-| GOOGLE_CLIENT_ID | Google OAuth2 Client ID | - |
-| GOOGLE_CLIENT_SECRET | Google OAuth2 Client Secret | - |
 
 ---
 
