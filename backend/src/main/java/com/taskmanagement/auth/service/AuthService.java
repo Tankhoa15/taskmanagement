@@ -32,7 +32,7 @@ public class AuthService {
     public AuthResponse authenticateWithGoogle(GoogleAuthRequest request) {
         LOG.infof("Authenticating Google token for user");
         
-        String email = verifyGoogleToken(request.getGoogleToken());
+        String email = verifyGoogleAccessToken(request.getGoogleToken());
         
         JsonNode userInfo = getGoogleUserInfo(request.getGoogleToken());
         
@@ -56,11 +56,11 @@ public class AuthService {
                 .build();
     }
     
-    private String verifyGoogleToken(String token) {
+    private String verifyGoogleAccessToken(String token) {
         try {
             Client client = ClientBuilder.newClient();
             Response response = client.target(GOOGLE_TOKEN_INFO_URL)
-                    .queryParam("id_token", token)
+                    .queryParam("access_token", token)
                     .request(MediaType.APPLICATION_JSON)
                     .get();
             
@@ -72,12 +72,24 @@ public class AuthService {
             String jsonResponse = response.readEntity(String.class);
             JsonNode jsonNode = new com.fasterxml.jackson.databind.ObjectMapper().readTree(jsonResponse);
             
-            String email = jsonNode.get("email").asText();
-            String aud = jsonNode.get("aud").asText();
+            String email = jsonNode.has("email") ? jsonNode.get("email").asText() : "";
+            String aud = jsonNode.has("aud")
+                    ? jsonNode.get("aud").asText()
+                    : jsonNode.has("audience") ? jsonNode.get("audience").asText() : "";
             
+            if (aud.isBlank()) {
+                LOG.error("Google token info response did not include an audience");
+                throw new RuntimeException("Invalid token audience");
+            }
+
             if (!aud.equals(clientId)) {
                 LOG.errorf("Token audience mismatch: expected %s, got %s", clientId, aud);
                 throw new RuntimeException("Invalid token audience");
+            }
+
+            if (email.isBlank()) {
+                LOG.error("Google token info response did not include an email");
+                throw new RuntimeException("Invalid token email");
             }
             
             return email;
