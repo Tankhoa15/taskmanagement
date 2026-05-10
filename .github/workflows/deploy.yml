@@ -42,14 +42,28 @@ jobs:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
 
       - name: Configure Firebase project
+        id: firebase-project
         run: |
-          node -e "const fs = require('fs'); const projectId = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON).project_id; if (!projectId) { throw new Error('FIREBASE_SERVICE_ACCOUNT is missing project_id'); } fs.writeFileSync('.firebaserc', JSON.stringify({ projects: { default: projectId } }, null, 2) + '\n');"
+          node <<'NODE'
+          const fs = require('fs');
+
+          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '{}');
+          const projectId = serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID;
+
+          if (!projectId) {
+            throw new Error('Set FIREBASE_PROJECT_ID or use a FIREBASE_SERVICE_ACCOUNT JSON secret with project_id');
+          }
+
+          fs.writeFileSync('.firebaserc', JSON.stringify({ projects: { default: projectId } }, null, 2) + '\n');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `project_id=${projectId}\n`);
+          NODE
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
-          projectId: ${{ fromJson(secrets.FIREBASE_SERVICE_ACCOUNT).project_id }}
+          projectId: ${{ steps.firebase-project.outputs.project_id }}
