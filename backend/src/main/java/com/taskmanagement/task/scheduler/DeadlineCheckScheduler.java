@@ -40,7 +40,7 @@ public class DeadlineCheckScheduler {
     @ConfigProperty(name = "task-management.scheduler.deadline-check.warning-before-minutes", defaultValue = "60")
     int warningBeforeMinutes;
     
-    @Scheduled(every = "*/10 * * * * ?", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
+    @Scheduled(cron = "*/10 * * * * ?", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
     public void checkDeadlineTasks() {
         if (!schedulerEnabled) {
             LOG.debug("Deadline check scheduler is disabled");
