@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      firebase_project_id:
+        description: 'Firebase project id. Optional if FIREBASE_PROJECT_ID variable/secret is set.'
+        required: false
+        type: string
 
 env:
   JAVA_VERSION: '21'
@@ -59,7 +64,7 @@ jobs:
           NODE
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_ID: ${{ inputs.firebase_project_id || vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
