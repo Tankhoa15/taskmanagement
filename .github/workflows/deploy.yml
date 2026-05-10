@@ -9,6 +9,10 @@ on:
         description: 'Firebase project id. Optional if FIREBASE_PROJECT_ID variable/secret is set.'
         required: false
         type: string
+      frontend_api_url:
+        description: 'Public backend origin, for example https://api.example.com. Optional if FRONTEND_API_URL variable/secret is set.'
+        required: false
+        type: string
 
 env:
   JAVA_VERSION: '21'
@@ -40,11 +44,20 @@ jobs:
       - name: Install Dependencies
         run: cd frontend-web && npm ci
 
+      - name: Validate frontend API URL
+        run: |
+          if [ -z "$VITE_API_URL" ]; then
+            echo "Set frontend_api_url when running this workflow, or configure FRONTEND_API_URL as a GitHub Actions variable/secret."
+            exit 1
+          fi
+        env:
+          VITE_API_URL: ${{ inputs.frontend_api_url || vars.FRONTEND_API_URL || secrets.FRONTEND_API_URL }}
+
       - name: Build
         run: cd frontend-web && npm run build
         env:
-          VITE_API_URL: ${{ secrets.FRONTEND_API_URL }}
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          VITE_API_URL: ${{ inputs.frontend_api_url || vars.FRONTEND_API_URL || secrets.FRONTEND_API_URL }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
 
       - name: Configure Firebase project
         id: firebase-project
