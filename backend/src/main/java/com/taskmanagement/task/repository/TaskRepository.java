@@ -39,7 +39,7 @@ public class TaskRepository implements PanacheRepositoryBase<Task, UUID> {
     }
     
     public List<Task> findTasksApproachingDeadline(Instant deadlineThreshold) {
-        return list("endTime <= ?1 and status not in ?2 and status != ?3",
+        return list("endTime <= ?1 and status not in ?2",
                     Sort.by("endTime").ascending(),
                     deadlineThreshold,
                     List.of(TaskStatus.DONE, TaskStatus.CANCEL));

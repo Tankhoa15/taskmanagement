@@ -11,9 +11,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jboss.logging.Logger;
-import io.smallrye.reactive.messaging.rabbitmq.OutgoingRabbitMQMetadata;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -80,15 +78,8 @@ public class DeadlineCheckScheduler {
         
         try {
             String json = objectMapper.writeValueAsString(notification);
-            
-            var metadata = new OutgoingRabbitMQMetadata.Builder()
-                    .withRoutingKey("task.deadline")
-                    .withContentType("application/json")
-                    .build();
-            
-            Message<String> message = Message.of(json, Metadata.of(metadata));
+            Message<String> message = Message.of(json);
             emitter.send(message);
-            
             LOG.infof("Sent deadline warning for task: %s to: %s", task.getId(), task.getAssignee().getEmail());
         } catch (Exception e) {
             LOG.errorf(e, "Failed to send deadline warning message for task: %s", task.getId());
