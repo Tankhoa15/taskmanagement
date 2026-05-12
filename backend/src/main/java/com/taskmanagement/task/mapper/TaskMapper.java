@@ -27,6 +27,8 @@ public interface TaskMapper {
     @Mapping(target = "assigneeId", expression = "java(task.getAssignee() != null ? task.getAssignee().getId() : null)")
     @Mapping(target = "assigneeName", expression = "java(task.getAssignee() != null ? task.getAssignee().getName() : null)")
     @Mapping(target = "assigneeEmail", expression = "java(task.getAssignee() != null ? task.getAssignee().getEmail() : null)")
+    @Mapping(target = "groupId", expression = "java(task.getGroup() != null ? task.getGroup().getId() : null)")
+    @Mapping(target = "groupName", expression = "java(task.getGroup() != null ? task.getGroup().getName() : null)")
     @Mapping(target = "createdAt", expression = "java(task.getCreatedAt())")
     @Mapping(target = "updatedAt", expression = "java(task.getUpdatedAt())")
     @Mapping(target = "completedAt", expression = "java(task.getCompletedAt())")

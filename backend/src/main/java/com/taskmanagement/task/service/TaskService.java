@@ -2,6 +2,9 @@ package com.taskmanagement.task.service;
 
 import com.taskmanagement.common.exception.BusinessException;
 import com.taskmanagement.common.exception.ResourceNotFoundException;
+import com.taskmanagement.group.entity.TaskGroup;
+import com.taskmanagement.group.repository.TaskGroupRepository;
+import com.taskmanagement.group.service.TaskGroupService;
 import com.taskmanagement.notification.mail.EmailService;
 import com.taskmanagement.task.dto.*;
 import com.taskmanagement.task.entity.Task;
@@ -37,6 +40,12 @@ public class TaskService {
     
     @Inject
     UserRepository userRepository;
+
+    @Inject
+    TaskGroupRepository groupRepository;
+
+    @Inject
+    TaskGroupService groupService;
     
     @Inject
     TaskEventProducer taskEventProducer;
@@ -53,6 +62,11 @@ public class TaskService {
         
         User assignee = userRepository.findByIdOptional(request.getAssigneeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignee", "id", request.getAssigneeId()));
+
+        TaskGroup group = groupRepository.findByIdOptional(request.getGroupId())
+                .orElseThrow(() -> new ResourceNotFoundException("Group", "id", request.getGroupId()));
+        groupService.requireAdmin(group.getId(), assignerId);
+        groupService.requireMember(group.getId(), assignee.getId());
         
         validateTaskDates(request.getStartTime(), request.getEndTime());
         
@@ -66,6 +80,7 @@ public class TaskService {
                 .endTime(request.getEndTime())
                 .assigner(assigner)
                 .assignee(assignee)
+                .group(group)
                 .build();
         
         taskRepository.persist(task);
@@ -85,6 +100,7 @@ public class TaskService {
         
         Task task = taskRepository.findByIdOptional(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task", "id", taskId));
+        requireGroupAdmin(task, userId);
         
         boolean updated = false;
         TaskStatus oldStatus = task.getStatus();
@@ -139,6 +155,7 @@ public class TaskService {
         
         Task task = taskRepository.findByIdOptional(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task", "id", taskId));
+        requireStatusPermission(task, userId);
         
         TaskStatus oldStatus = task.getStatus();
         TaskStatus newStatus = request.getStatus();
@@ -176,9 +193,13 @@ public class TaskService {
         
         Task task = taskRepository.findByIdOptional(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task", "id", taskId));
+        requireGroupAdmin(task, assignerId);
         
         User newAssignee = userRepository.findByIdOptional(assigneeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Assignee", "id", assigneeId));
+        if (task.getGroup() != null) {
+            groupService.requireMember(task.getGroup().getId(), newAssignee.getId());
+        }
         
         UUID oldAssigneeId = task.getAssignee() != null ? task.getAssignee().getId() : null;
         task.setAssignee(newAssignee);
@@ -191,10 +212,11 @@ public class TaskService {
         return TaskMapper.INSTANCE.toDto(task);
     }
     
-    public TaskDto getTaskById(UUID taskId) {
-        return taskRepository.findByIdOptional(taskId)
-                .map(TaskMapper.INSTANCE::toDto)
+    public TaskDto getTaskById(UUID taskId, UUID userId) {
+        Task task = taskRepository.findByIdOptional(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task", "id", taskId));
+        requireViewPermission(task, userId);
+        return TaskMapper.INSTANCE.toDto(task);
     }
     
     public List<TaskDto> getTasksByAssignee(UUID assigneeId) {
@@ -210,13 +232,7 @@ public class TaskService {
     }
     
     public List<TaskDto> getMyTasks(UUID userId) {
-        List<Task> assignedTasks = taskRepository.findByAssigneeId(userId);
-        List<Task> createdTasks = taskRepository.findByAssignerId(userId);
-        
-        assignedTasks.addAll(createdTasks);
-        
-        return assignedTasks.stream()
-                .distinct()
+        return taskRepository.findVisibleToUser(userId).stream()
                 .map(TaskMapper.INSTANCE::toDto)
                 .collect(Collectors.toList());
     }
@@ -247,6 +263,36 @@ public class TaskService {
                 .build();
         
         taskHistoryRepository.persist(history);
+    }
+
+    private void requireGroupAdmin(Task task, UUID userId) {
+        if (task.getGroup() == null) {
+            if (task.getAssigner().getId().equals(userId)) {
+                return;
+            }
+            throw new BusinessException("Only the task assigner can manage this task", "TASK_ACCESS_DENIED");
+        }
+        groupService.requireAdmin(task.getGroup().getId(), userId);
+    }
+
+    private void requireStatusPermission(Task task, UUID userId) {
+        if (task.getAssignee().getId().equals(userId)) {
+            return;
+        }
+        if (task.getGroup() != null && groupService.isAdmin(task.getGroup().getId(), userId)) {
+            return;
+        }
+        throw new BusinessException("You can only update your own tasks unless you are a group admin", "TASK_ACCESS_DENIED");
+    }
+
+    private void requireViewPermission(Task task, UUID userId) {
+        if (task.getAssignee().getId().equals(userId) || task.getAssigner().getId().equals(userId)) {
+            return;
+        }
+        if (task.getGroup() != null && groupService.isAdmin(task.getGroup().getId(), userId)) {
+            return;
+        }
+        throw new BusinessException("You do not have access to this task", "TASK_ACCESS_DENIED");
     }
     
     private void publishTaskCreatedEvent(Task task) {

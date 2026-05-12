@@ -33,6 +33,8 @@ export interface Task {
   assigneeId: string
   assigneeName: string
   assigneeEmail: string
+  groupId?: string
+  groupName?: string
   createdAt: string
   updatedAt: string
   completedAt?: string
@@ -51,6 +53,7 @@ export interface CreateTaskRequest {
   startTime: string
   endTime: string
   assigneeId: string
+  groupId: string
 }
 
 export interface UpdateTaskRequest {
@@ -74,4 +77,23 @@ export interface ApiResponse<T> {
   message: string
   data: T
   errorCode?: string
+}
+
+export type GroupRole = 'ADMIN' | 'MEMBER'
+
+export interface TaskGroup {
+  id: string
+  name: string
+  ownerId: string
+  ownerName?: string
+  ownerEmail: string
+  currentUserRole: GroupRole
+  createdAt: string
+}
+
+export interface GroupMember {
+  userId: string
+  name?: string
+  email: string
+  role: GroupRole
 }

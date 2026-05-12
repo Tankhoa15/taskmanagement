@@ -51,9 +51,10 @@ public class TaskController {
     @GET
     @Path("/{id}")
     public Response getTaskById(@PathParam("id") UUID taskId) {
-        LOG.infof("Getting task: %s", taskId);
+        UUID userId = extractUserId();
+        LOG.infof("Getting task: %s by user: %s", taskId, userId);
         
-        TaskDto task = taskService.getTaskById(taskId);
+        TaskDto task = taskService.getTaskById(taskId, userId);
         
         return Response.ok(ApiResponse.success(task)).build();
     }

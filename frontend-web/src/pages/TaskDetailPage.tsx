@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { taskService } from '../services/taskService'
+import { groupService } from '../services/groupService'
 import { useAuthStore } from '../store/authStore'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -47,6 +48,11 @@ export default function TaskDetailPage() {
     enabled: !!id,
   })
 
+  const { data: groups = [] } = useQuery({
+    queryKey: ['groups'],
+    queryFn: groupService.getMyGroups,
+  })
+
   const statusMutation = useMutation({
     mutationFn: ({ status, reason }: { status: TaskStatus; reason?: string }) => 
       taskService.updateTaskStatus(id!, { status, cancelReason: reason }),
@@ -83,7 +89,8 @@ export default function TaskDetailPage() {
 
   const isAssigner = user?.email === task.assignerEmail
   const isAssignee = user?.email === task.assigneeEmail
-  const canEdit = isAssigner || isAssignee
+  const isGroupAdmin = groups.some((group) => group.id === task.groupId && group.currentUserRole === 'ADMIN')
+  const canEdit = isAssignee || isGroupAdmin || (isAssigner && !task.groupId)
   const StatusIcon = statusConfig[task.status].icon
 
   return (
@@ -106,6 +113,11 @@ export default function TaskDetailPage() {
               <span className={clsx('px-2 py-1 text-xs font-medium rounded-full', priorityConfig[task.priority].color)}>
                 {priorityConfig[task.priority].label}
               </span>
+              {task.groupName && (
+                <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
+                  {task.groupName}
+                </span>
+              )}
             </div>
           </div>
           

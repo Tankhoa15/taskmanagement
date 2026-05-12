@@ -2,6 +2,7 @@ package com.taskmanagement.task.repository;
 
 import com.taskmanagement.task.entity.Task;
 import com.taskmanagement.task.entity.TaskStatus;
+import com.taskmanagement.group.entity.GroupRole;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
@@ -20,6 +21,17 @@ public class TaskRepository implements PanacheRepositoryBase<Task, UUID> {
     
     public List<Task> findByAssignerId(UUID assignerId) {
         return list("assigner.id", Sort.by("createdAt").descending(), assignerId);
+    }
+
+    public List<Task> findVisibleToUser(UUID userId) {
+        return find("""
+                select distinct t from Task t
+                left join TaskGroupMember m on t.group = m.group and m.user.id = ?1
+                where t.assignee.id = ?1
+                   or t.assigner.id = ?1
+                   or m.role = ?2
+                order by t.createdAt desc
+                """, userId, GroupRole.ADMIN).list();
     }
     
     public List<Task> findByStatus(TaskStatus status) {

@@ -27,6 +27,8 @@ public class TaskDto {
     private UUID assigneeId;
     private String assigneeName;
     private String assigneeEmail;
+    private UUID groupId;
+    private String groupName;
     private Instant createdAt;
     private Instant updatedAt;
     private Instant completedAt;

@@ -6,6 +6,7 @@ import TasksPage from './pages/TasksPage'
 import TaskDetailPage from './pages/TaskDetailPage'
 import CreateTaskPage from './pages/CreateTaskPage'
 import UsersPage from './pages/UsersPage'
+import GroupsPage from './pages/GroupsPage'
 import Layout from './components/Layout'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ function AppContent() {
         <Route path="tasks/create" element={<CreateTaskPage />} />
         <Route path="tasks/:id" element={<TaskDetailPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="groups" element={<GroupsPage />} />
       </Route>
     </Routes>
   )

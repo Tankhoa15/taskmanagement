@@ -9,7 +9,8 @@ import {
   LogOut, 
   Menu,
   X,
-  Bell
+  Bell,
+  Shield
 } from 'lucide-react'
 import { useState } from 'react'
 import clsx from 'clsx'
@@ -18,6 +19,7 @@ const menuItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/tasks', label: 'Tasks', icon: ListTodo },
   { path: '/users', label: 'Users', icon: Users },
+  { path: '/groups', label: 'Groups', icon: Shield },
 ]
 
 export default function Layout() {

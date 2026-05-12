@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { taskService } from '../services/taskService'
-import { userService } from '../services/userService'
+import { groupService } from '../services/groupService'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Calendar, User, AlertCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -17,6 +17,7 @@ const schema = yup.object({
   priority: yup.string().required('Ưu tiên là bắt buộc'),
   startTime: yup.string().required('Thời gian bắt đầu là bắt buộc'),
   endTime: yup.string().required('Thời gian kết thúc là bắt buộc'),
+  groupId: yup.string().required('Nhóm là bắt buộc'),
   assigneeId: yup.string().required('Người được giao là bắt buộc'),
 })
 
@@ -26,9 +27,9 @@ export default function CreateTaskPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: userService.getAllUsers,
+  const { data: groups = [] } = useQuery({
+    queryKey: ['groups'],
+    queryFn: groupService.getMyGroups,
   })
 
   const createMutation = useMutation({
@@ -53,6 +54,15 @@ export default function CreateTaskPage() {
 
   const startTime = watch('startTime')
   const endTime = watch('endTime')
+  const groupId = watch('groupId')
+
+  const { data: members = [] } = useQuery({
+    queryKey: ['groups', groupId, 'members'],
+    queryFn: () => groupService.getMembers(groupId),
+    enabled: Boolean(groupId),
+  })
+
+  const adminGroups = groups.filter((group) => group.currentUserRole === 'ADMIN')
 
   const onSubmit = (data: FormData) => {
     createMutation.mutate({
@@ -163,6 +173,27 @@ export default function CreateTaskPage() {
         {/* Assignee */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
+            Nhóm <span className="text-red-500">*</span>
+          </label>
+          <select
+            {...register('groupId')}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Chọn nhóm quản lý task</option>
+            {adminGroups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+          {errors.groupId && <p className="text-red-500 text-sm mt-1">{errors.groupId.message}</p>}
+          {adminGroups.length === 0 && (
+            <p className="text-amber-600 text-sm mt-1">Bạn cần tạo nhóm hoặc được cấp quyền admin nhóm trước khi giao task.</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             <User size={14} className="inline mr-1" />
             Người được giao <span className="text-red-500">*</span>
           </label>
@@ -171,9 +202,9 @@ export default function CreateTaskPage() {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
           >
             <option value="">Chọn người được giao</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name || u.email} ({u.email})
+            {members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.name || member.email} ({member.email})
               </option>
             ))}
           </select>

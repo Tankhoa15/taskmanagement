@@ -35,4 +35,7 @@ public class CreateTaskRequest {
     
     @NotNull(message = "Assignee ID is required")
     private UUID assigneeId;
+
+    @NotNull(message = "Group ID is required")
+    private UUID groupId;
 }
