@@ -14,13 +14,17 @@ services:
           name: taskmanagement-db
           property: connectionString
       - key: EMAIL_ENABLED
-        value: "false"
+        sync: false
       - key: MAIL_HOST
         value: smtp.gmail.com
       - key: MAIL_PORT
         value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
       - key: MAIL_FROM
-        value: noreply@taskmanagement.com
+        sync: false
 
 databases:
   - name: taskmanagement-db

@@ -2,6 +2,7 @@ package com.taskmanagement.task.service;
 
 import com.taskmanagement.common.exception.BusinessException;
 import com.taskmanagement.common.exception.ResourceNotFoundException;
+import com.taskmanagement.notification.mail.EmailService;
 import com.taskmanagement.task.dto.*;
 import com.taskmanagement.task.entity.Task;
 import com.taskmanagement.task.entity.TaskHistory;
@@ -39,6 +40,9 @@ public class TaskService {
     
     @Inject
     TaskEventProducer taskEventProducer;
+
+    @Inject
+    EmailService emailService;
     
     @Transactional
     public TaskDto createTask(CreateTaskRequest request, UUID assignerId) {
@@ -69,6 +73,7 @@ public class TaskService {
         saveTaskHistory(task.getId(), assignerId, "TASK_CREATED", null, TaskStatus.OPEN, null, null);
         
         publishTaskCreatedEvent(task);
+        sendTaskCreatedEmail(task);
         
         LOG.infof("Task created successfully: %s", task.getId());
         return TaskMapper.INSTANCE.toDto(task);
@@ -158,6 +163,7 @@ public class TaskService {
         
         if (newStatus == TaskStatus.DONE) {
             publishTaskDoneEvent(task);
+            sendTaskDoneEmails(task);
         }
         
         LOG.infof("Task status updated: %s -> %s", oldStatus, newStatus);
@@ -315,5 +321,44 @@ public class TaskService {
                 .build();
         
         taskEventProducer.sendTaskEvent(event);
+    }
+
+    private void sendTaskCreatedEmail(Task task) {
+        EmailTaskNotification notification = EmailTaskNotification.builder()
+                .taskId(task.getId())
+                .taskTitle(task.getTitle())
+                .recipientEmail(task.getAssignee().getEmail())
+                .recipientName(task.getAssignee().getName())
+                .notificationType(task.getPriority().name())
+                .content(task.getContent())
+                .deadline(task.getEndTime())
+                .createdAt(Instant.now())
+                .build();
+
+        emailService.sendTaskCreatedEmail(notification);
+    }
+
+    private void sendTaskDoneEmails(Task task) {
+        String completedBy = task.getAssignee().getName() != null
+                ? task.getAssignee().getName()
+                : task.getAssignee().getEmail();
+
+        EmailTaskNotification assigneeNotification = EmailTaskNotification.builder()
+                .taskId(task.getId())
+                .taskTitle(task.getTitle())
+                .recipientEmail(task.getAssignee().getEmail())
+                .recipientName(task.getAssignee().getName())
+                .createdAt(Instant.now())
+                .build();
+        emailService.sendTaskDoneEmailToAssignee(assigneeNotification, completedBy);
+
+        EmailTaskNotification assignerNotification = EmailTaskNotification.builder()
+                .taskId(task.getId())
+                .taskTitle(task.getTitle())
+                .recipientEmail(task.getAssigner().getEmail())
+                .recipientName(task.getAssigner().getName())
+                .createdAt(Instant.now())
+                .build();
+        emailService.sendTaskDoneEmailToAssigner(assignerNotification, completedBy);
     }
 }
