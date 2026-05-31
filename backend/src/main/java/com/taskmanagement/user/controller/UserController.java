@@ -70,13 +70,22 @@ public class UserController {
         return Response.ok(ApiResponse.success(users)).build();
     }
 
+    @DELETE
+    @Path("/me")
+    public Response deleteSelf() {
+        UUID userId = extractUserId();
+        LOG.infof("User %s deleting their account", userId);
+        userService.deleteSelf(userId);
+        return Response.ok(ApiResponse.success("Tài khoản đã được xóa", null)).build();
+    }
+
     @PATCH
     @Path("/{id}/enabled")
     @RolesAllowed("ADMIN")
     public Response setUserEnabled(@PathParam("id") UUID targetUserId, SetUserEnabledRequest request) {
         UUID adminId = extractUserId();
         LOG.infof("Admin %s setting enabled=%s for user %s", adminId, request.isEnabled(), targetUserId);
-        return userService.setUserEnabled(targetUserId, request.isEnabled())
+        return userService.setUserEnabled(targetUserId, request.isEnabled(), adminId)
                 .map(user -> Response.ok(ApiResponse.success(user)).build())
                 .orElse(Response.status(Response.Status.NOT_FOUND)
                         .entity(ApiResponse.error("User not found")).build());

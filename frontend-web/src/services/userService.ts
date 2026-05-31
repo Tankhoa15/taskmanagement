@@ -31,4 +31,8 @@ export const userService = {
     const response = await api.patch<ApiResponse<User>>(`/api/users/${userId}/role`, { role })
     return response.data.data
   },
+
+  deleteSelf: async (): Promise<void> => {
+    await api.delete('/api/users/me')
+  },
 }

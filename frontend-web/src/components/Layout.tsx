@@ -1,7 +1,9 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { taskService } from '../services/taskService'
+import { userService } from '../services/userService'
+import toast from 'react-hot-toast'
 import {
   LayoutDashboard,
   ListTodo,
@@ -12,7 +14,8 @@ import {
   Bell,
   Shield,
   Settings,
-  Kanban
+  Kanban,
+  Trash2
 } from 'lucide-react'
 import { useState } from 'react'
 import clsx from 'clsx'
@@ -27,8 +30,19 @@ const menuItems = [
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteInput, setDeleteInput] = useState('')
   const { user, logout } = useAuthStore()
   const isAdmin = user?.role === 'ADMIN'
+
+  const deleteSelf = useMutation({
+    mutationFn: userService.deleteSelf,
+    onSuccess: () => {
+      toast.success('Tài khoản đã được xóa')
+      logout()
+    },
+    onError: () => toast.error('Xóa tài khoản thất bại'),
+  })
   const location = useLocation()
   const { data: assignedTasks = [] } = useQuery({
     queryKey: ['tasks', 'assigned', 'notification-count'],
@@ -123,8 +137,64 @@ export default function Layout() {
             <LogOut size={18} className="mr-2" />
             Logout
           </button>
+          <button
+            onClick={() => { setDeleteInput(''); setShowDeleteConfirm(true) }}
+            className="flex items-center w-full px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors text-sm"
+          >
+            <Trash2 size={16} className="mr-2" />
+            Xóa tài khoản
+          </button>
         </div>
       </aside>
+
+      {/* Delete account confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Trash2 size={20} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Xóa tài khoản</h3>
+                <p className="text-sm text-gray-500">Hành động này không thể hoàn tác</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-700 space-y-1">
+              <p>• Tài khoản của bạn sẽ bị xóa vĩnh viễn</p>
+              <p>• Dữ liệu cá nhân sẽ được ẩn danh hóa</p>
+              <p>• Các task bạn đã tạo/nhận vẫn được giữ lại</p>
+            </div>
+
+            <p className="text-sm text-gray-700 mb-2">
+              Gõ <strong>XOA</strong> để xác nhận:
+            </p>
+            <input
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              placeholder="XOA"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                Hủy
+              </button>
+              <button
+                disabled={deleteInput !== 'XOA' || deleteSelf.isPending}
+                onClick={() => deleteSelf.mutate()}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                {deleteSelf.isPending ? 'Đang xóa...' : 'Xóa tài khoản'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main content */}
       <div className="lg:pl-64">

@@ -53,6 +53,9 @@ public class User extends PanacheEntityBase {
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     public static User findByEmail(String email) {
         return find("email", email).firstResult();
     }

@@ -56,6 +56,9 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
+        if (user.getDeletedAt() != null) {
+            throw new UnauthorizedException("Invalid email or password");
+        }
         if (!Boolean.TRUE.equals(user.getEnabled()) || !passwordService.verify(request.getPassword(), user.getPasswordHash())) {
             throw new UnauthorizedException("Invalid email or password");
         }
