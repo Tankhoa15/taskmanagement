@@ -2,29 +2,33 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useQuery } from '@tanstack/react-query'
 import { taskService } from '../services/taskService'
-import { 
-  LayoutDashboard, 
-  ListTodo, 
-  Users, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  ListTodo,
+  Users,
+  LogOut,
   Menu,
   X,
   Bell,
-  Shield
+  Shield,
+  Settings,
+  Kanban
 } from 'lucide-react'
 import { useState } from 'react'
 import clsx from 'clsx'
 
 const menuItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/tasks', label: 'Tasks', icon: ListTodo },
-  { path: '/users', label: 'Users', icon: Users },
-  { path: '/groups', label: 'Groups', icon: Shield },
+  { path: '/board',     label: 'Board',     icon: Kanban },
+  { path: '/tasks',     label: 'Tasks',     icon: ListTodo },
+  { path: '/users',     label: 'Users',     icon: Users },
+  { path: '/groups',    label: 'Groups',    icon: Shield },
 ]
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { user, logout } = useAuthStore()
+  const isAdmin = user?.role === 'ADMIN'
   const location = useLocation()
   const { data: assignedTasks = [] } = useQuery({
     queryKey: ['tasks', 'assigned', 'notification-count'],
@@ -70,8 +74,8 @@ export default function Layout() {
                 to={item.path}
                 className={clsx(
                   "flex items-center px-4 py-3 rounded-lg transition-colors",
-                  isActive 
-                    ? "bg-primary-50 text-primary-600" 
+                  isActive
+                    ? "bg-primary-50 text-primary-600"
                     : "text-gray-600 hover:bg-gray-100"
                 )}
               >
@@ -80,6 +84,20 @@ export default function Layout() {
               </Link>
             )
           })}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={clsx(
+                "flex items-center px-4 py-3 rounded-lg transition-colors",
+                location.pathname === '/admin'
+                  ? "bg-primary-50 text-primary-600"
+                  : "text-gray-600 hover:bg-gray-100"
+              )}
+            >
+              <Settings size={20} className="mr-3" />
+              Quản trị
+            </Link>
+          )}
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
@@ -87,9 +105,15 @@ export default function Layout() {
             <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold">
               {user?.name?.charAt(0).toUpperCase() || 'U'}
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-              <p className="text-xs text-gray-500">{user?.email}</p>
+            <div className="ml-3 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
+              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              {isAdmin && (
+                <span className="inline-flex items-center gap-1 mt-0.5 text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                  <Shield size={10} />
+                  Admin
+                </span>
+              )}
             </div>
           </div>
           <button

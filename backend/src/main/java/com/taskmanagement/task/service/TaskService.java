@@ -5,6 +5,8 @@ import com.taskmanagement.common.exception.ResourceNotFoundException;
 import com.taskmanagement.group.entity.TaskGroup;
 import com.taskmanagement.group.repository.TaskGroupRepository;
 import com.taskmanagement.group.service.TaskGroupService;
+import com.taskmanagement.label.entity.Label;
+import com.taskmanagement.label.repository.LabelRepository;
 import com.taskmanagement.notification.mail.EmailService;
 import com.taskmanagement.task.dto.*;
 import com.taskmanagement.task.entity.Task;
@@ -23,7 +25,9 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -52,6 +56,9 @@ public class TaskService {
 
     @Inject
     EmailService emailService;
+
+    @Inject
+    LabelRepository labelRepository;
     
     @Transactional
     public TaskDto createTask(CreateTaskRequest request, UUID assignerId) {
@@ -84,12 +91,17 @@ public class TaskService {
                 .build();
         
         taskRepository.persist(task);
-        
+
+        if (request.getLabelIds() != null && !request.getLabelIds().isEmpty()) {
+            Set<Label> labels = resolveLabels(request.getLabelIds());
+            task.setLabels(labels);
+        }
+
         saveTaskHistory(task.getId(), assignerId, "TASK_CREATED", null, TaskStatus.OPEN, null, null);
-        
+
         publishTaskCreatedEvent(task);
         sendTaskCreatedEmail(task);
-        
+
         LOG.infof("Task created successfully: %s", task.getId());
         return TaskMapper.INSTANCE.toDto(task);
     }
@@ -367,6 +379,24 @@ public class TaskService {
                 .build();
         
         taskEventProducer.sendTaskEvent(event);
+    }
+
+    @Transactional
+    public TaskDto updateTaskLabels(UUID taskId, List<UUID> labelIds, UUID userId) {
+        Task task = taskRepository.findByIdOptional(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task", "id", taskId));
+        requireGroupAdmin(task, userId);
+        task.setLabels(resolveLabels(labelIds));
+        taskRepository.persist(task);
+        return TaskMapper.INSTANCE.toDto(task);
+    }
+
+    private Set<Label> resolveLabels(List<UUID> labelIds) {
+        if (labelIds == null || labelIds.isEmpty()) return new HashSet<>();
+        return labelIds.stream()
+                .map(id -> labelRepository.findByIdOptional(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Label", "id", id)))
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     private void sendTaskCreatedEmail(Task task) {

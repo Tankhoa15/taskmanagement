@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Shield, UserPlus, Users } from 'lucide-react'
+import { Shield, UserPlus, Users, Trash2 } from 'lucide-react'
 import { groupService } from '../services/groupService'
 import { userService } from '../services/userService'
+import { useAuthStore } from '../store/authStore'
 import type { GroupRole } from '../types'
 
 export default function GroupsPage() {
   const queryClient = useQueryClient()
+  const { user: currentUser } = useAuthStore()
   const [groupName, setGroupName] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [selectedUserId, setSelectedUserId] = useState('')
@@ -59,6 +61,15 @@ export default function GroupsPage() {
       queryClient.invalidateQueries({ queryKey: ['groups', activeGroup?.id, 'members'] })
       toast.success('Đã cập nhật quyền')
     },
+  })
+
+  const removeMember = useMutation({
+    mutationFn: (userId: string) => groupService.removeMember(activeGroup!.id, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups', activeGroup?.id, 'members'] })
+      toast.success('Đã xóa thành viên')
+    },
+    onError: () => toast.error('Xóa thành viên thất bại'),
   })
 
   const canManage = activeGroup?.currentUserRole === 'ADMIN'
@@ -164,26 +175,42 @@ export default function GroupsPage() {
           )}
 
           <div className="divide-y divide-gray-100">
-            {members.map((member) => (
-              <div key={member.userId} className="py-3 flex items-center justify-between gap-3">
-                <div>
-                  <div className="font-medium text-gray-900">{member.name || member.email}</div>
-                  <div className="text-sm text-gray-500">{member.email}</div>
+            {members.map((member) => {
+              const isSelf = member.userId === currentUser?.id
+              return (
+                <div key={member.userId} className="py-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium text-gray-900">{member.name || member.email}</div>
+                    <div className="text-sm text-gray-500">{member.email}</div>
+                  </div>
+                  {canManage ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={member.role}
+                        disabled={isSelf}
+                        onChange={(event) => changeRole.mutate({ userId: member.userId, role: event.target.value as GroupRole })}
+                        className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
+                      >
+                        <option value="MEMBER">Member</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
+                      {!isSelf && (
+                        <button
+                          onClick={() => removeMember.mutate(member.userId)}
+                          disabled={removeMember.isPending}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Xóa thành viên"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">{member.role}</span>
+                  )}
                 </div>
-                {canManage ? (
-                  <select
-                    value={member.role}
-                    onChange={(event) => changeRole.mutate({ userId: member.userId, role: event.target.value as GroupRole })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg"
-                  >
-                    <option value="MEMBER">Member</option>
-                    <option value="ADMIN">Admin</option>
-                  </select>
-                ) : (
-                  <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">{member.role}</span>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
       </div>

@@ -7,6 +7,8 @@ import TaskDetailPage from './pages/TaskDetailPage'
 import CreateTaskPage from './pages/CreateTaskPage'
 import UsersPage from './pages/UsersPage'
 import GroupsPage from './pages/GroupsPage'
+import AdminPage from './pages/AdminPage'
+import BoardPage from './pages/BoardPage'
 import Layout from './components/Layout'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -14,6 +16,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  return <>{children}</>
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuthStore()
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user?.role !== 'ADMIN') {
+    return <Navigate to="/dashboard" replace />
   }
 
   return <>{children}</>
@@ -36,6 +52,12 @@ function AppContent() {
         <Route path="tasks/:id" element={<TaskDetailPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="groups" element={<GroupsPage />} />
+        <Route path="board" element={<BoardPage />} />
+        <Route path="admin" element={
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
+        } />
       </Route>
     </Routes>
   )

@@ -21,4 +21,14 @@ export const userService = {
     const response = await api.get<ApiResponse<User>>(`/api/users/email/${email}`)
     return response.data.data
   },
+
+  setUserEnabled: async (userId: string, enabled: boolean): Promise<User> => {
+    const response = await api.patch<ApiResponse<User>>(`/api/users/${userId}/enabled`, { enabled })
+    return response.data.data
+  },
+
+  updateUserRole: async (userId: string, role: string): Promise<User> => {
+    const response = await api.patch<ApiResponse<User>>(`/api/users/${userId}/role`, { role })
+    return response.data.data
+  },
 }

@@ -23,11 +23,11 @@ export const useAuthStore = create<AuthState>()(
           token: authData.accessToken,
           isAuthenticated: true,
           user: {
-            id: '',
+            id: authData.userId,
             email: authData.email,
             name: authData.name,
             pictureUrl: authData.pictureUrl,
-            role: 'USER',
+            role: authData.role,
             enabled: true,
             createdAt: new Date().toISOString(),
           },

@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { taskService } from '../services/taskService'
+import { labelService } from '../services/labelService'
+import LabelBadge from '../components/LabelBadge'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { 
-  Plus, 
-  Filter, 
+import {
+  Plus,
+  Filter,
   Search,
   Calendar,
   User
@@ -47,6 +49,7 @@ const priorityColors: Record<string, string> = {
 export default function TasksPage() {
   const navigate = useNavigate()
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'ALL'>('ALL')
+  const [filterLabelId, setFilterLabelId] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
   const { data: tasks, isLoading } = useQuery({
@@ -54,10 +57,16 @@ export default function TasksPage() {
     queryFn: taskService.getMyTasks,
   })
 
-  const filteredTasks = tasks?.filter(task => {
+  const { data: labels = [] } = useQuery({
+    queryKey: ['labels'],
+    queryFn: labelService.getAllLabels,
+  })
+
+  const filteredTasks = tasks?.filter((task) => {
     const matchesStatus = filterStatus === 'ALL' || task.status === filterStatus
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesStatus && matchesSearch
+    const matchesLabel = !filterLabelId || task.labels?.some((l) => l.id === filterLabelId)
+    return matchesStatus && matchesSearch && matchesLabel
   }) || []
 
   return (
@@ -100,12 +109,26 @@ export default function TasksPage() {
               onChange={(e) => setFilterStatus(e.target.value as TaskStatus | 'ALL')}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
-              <option value="ALL">Tất cả</option>
+              <option value="ALL">Tất cả trạng thái</option>
               {Object.entries(statusLabels).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </div>
+
+          {/* Label Filter */}
+          {labels.length > 0 && (
+            <select
+              value={filterLabelId}
+              onChange={(e) => setFilterLabelId(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Tất cả label</option>
+              {labels.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -160,6 +183,11 @@ function TaskCard({ task }: { task: Task }) {
           <h3 className="font-semibold text-gray-900">{task.title}</h3>
           {task.content && (
             <p className="text-sm text-gray-500 mt-1 line-clamp-2">{task.content}</p>
+          )}
+          {task.labels && task.labels.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {task.labels.map((l) => <LabelBadge key={l.id} label={l} size="sm" />)}
+            </div>
           )}
           <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
             <div className="flex items-center">

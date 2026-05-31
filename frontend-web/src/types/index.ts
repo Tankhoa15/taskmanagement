@@ -13,9 +13,11 @@ export interface AuthResponse {
   accessToken: string
   tokenType: string
   expiresIn: number
+  userId: string
   email: string
   name: string
   pictureUrl?: string
+  role: string
 }
 
 export interface Task {
@@ -35,6 +37,7 @@ export interface Task {
   assigneeEmail: string
   groupId?: string
   groupName?: string
+  labels?: Label[]
   createdAt: string
   updatedAt: string
   completedAt?: string
@@ -54,6 +57,7 @@ export interface CreateTaskRequest {
   endTime: string
   assigneeId: string
   groupId: string
+  labelIds?: string[]
 }
 
 export interface UpdateTaskRequest {
@@ -96,4 +100,20 @@ export interface GroupMember {
   name?: string
   email: string
   role: GroupRole
+}
+
+export interface Label {
+  id: string
+  name: string
+  color: string
+}
+
+export interface Comment {
+  id: string
+  taskId: string
+  authorId: string
+  authorName?: string
+  authorEmail: string
+  content: string
+  createdAt: string
 }

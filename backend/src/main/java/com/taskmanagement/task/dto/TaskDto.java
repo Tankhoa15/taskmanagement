@@ -1,10 +1,12 @@
 package com.taskmanagement.task.dto;
 
+import com.taskmanagement.label.dto.LabelDto;
 import com.taskmanagement.task.entity.TaskPriority;
 import com.taskmanagement.task.entity.TaskStatus;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -29,6 +31,7 @@ public class TaskDto {
     private String assigneeEmail;
     private UUID groupId;
     private String groupName;
+    private List<LabelDto> labels;
     private Instant createdAt;
     private Instant updatedAt;
     private Instant completedAt;

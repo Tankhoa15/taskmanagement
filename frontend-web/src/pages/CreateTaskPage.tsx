@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
@@ -5,6 +6,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { taskService } from '../services/taskService'
 import { groupService } from '../services/groupService'
+import LabelPicker from '../components/LabelPicker'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Calendar, User, AlertCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -26,6 +28,7 @@ type FormData = yup.InferType<typeof schema>
 export default function CreateTaskPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([])
 
   const { data: groups = [] } = useQuery({
     queryKey: ['groups'],
@@ -69,6 +72,7 @@ export default function CreateTaskPage() {
       ...data,
       startTime: new Date(data.startTime).toISOString(),
       endTime: new Date(data.endTime).toISOString(),
+      labelIds: selectedLabelIds,
     } as CreateTaskRequest)
   }
 
@@ -209,6 +213,12 @@ export default function CreateTaskPage() {
             ))}
           </select>
           {errors.assigneeId && <p className="text-red-500 text-sm mt-1">{errors.assigneeId.message}</p>}
+        </div>
+
+        {/* Labels */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Labels</label>
+          <LabelPicker selectedIds={selectedLabelIds} onChange={setSelectedLabelIds} />
         </div>
 
         {/* Warning */}

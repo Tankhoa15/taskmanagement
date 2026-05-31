@@ -74,9 +74,11 @@ public class AuthService {
                 .accessToken(accessToken)
                 .tokenType("Bearer")
                 .expiresIn(3600L)
+                .userId(user.getId().toString())
                 .email(user.getEmail())
                 .name(user.getName())
                 .pictureUrl(user.getPictureUrl())
+                .role(user.getRole())
                 .build();
     }
 

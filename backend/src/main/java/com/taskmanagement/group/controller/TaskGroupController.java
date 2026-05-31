@@ -75,6 +75,17 @@ public class TaskGroupController {
         return Response.ok(ApiResponse.success("Group member role updated successfully", member)).build();
     }
 
+    @DELETE
+    @Path("/{groupId}/members/{userId}")
+    public Response removeMember(
+            @PathParam("groupId") UUID groupId,
+            @PathParam("userId") UUID targetUserId) {
+        UUID userId = extractUserId();
+        LOG.infof("Removing user %s from group %s by admin %s", targetUserId, groupId, userId);
+        groupService.removeMember(groupId, targetUserId, userId);
+        return Response.ok(ApiResponse.success("Member removed successfully", null)).build();
+    }
+
     private UUID extractUserId() {
         return UUID.fromString(jwt.getSubject());
     }

@@ -133,6 +133,12 @@
             <version>1.5.5.Final</version>
         </dependency>
 
+        <!-- WebSockets -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets</artifactId>
+        </dependency>
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

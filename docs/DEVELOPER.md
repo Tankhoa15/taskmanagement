@@ -10,11 +10,12 @@
 7. [Frontend Web Development](#frontend-web-development)
 8. [Mobile App Development](#mobile-app-development)
 9. [API Documentation](#api-documentation)
-10. [Database Schema](#database-schema)
-11. [Message Queue](#message-queue)
-12. [Testing](#testing)
-13. [CI/CD Pipeline](#cicd-pipeline)
-14. [Deployment](#deployment)
+10. [Authorization Model](#authorization-model)
+11. [Database Schema](#database-schema)
+12. [Message Queue](#message-queue)
+13. [Testing](#testing)
+14. [CI/CD Pipeline](#cicd-pipeline)
+15. [Deployment](#deployment)
 
 ---
 
@@ -22,10 +23,11 @@
 
 Enterprise Task Management System cho phép:
 - Đăng nhập/đăng ký bằng email và mật khẩu
-- Tạo và quản lý công việc
-- Giao công việc cho người khác
+- Tạo và quản lý công việc theo nhóm (group)
+- Giao công việc cho thành viên trong nhóm
 - Theo dõi tiến độ công việc
 - Nhận thông báo qua email
+- Quản trị hệ thống (Admin): quản lý tài khoản, phân quyền
 
 ---
 
@@ -41,7 +43,7 @@ Enterprise Task Management System cho phép:
 | Message Queue | RabbitMQ | 3.13 |
 | Event Streaming | Apache Kafka | 7.5 |
 | Migration | Flyway | - |
-| Security | JWT + email/password | - |
+| Security | JWT + MicroProfile JWT | - |
 
 ### Frontend Web
 | Component | Technology | Version |
@@ -85,8 +87,8 @@ Enterprise Task Management System cho phép:
 ┌─────────────────────────────────────────────────────────────┐
 │                    Service Layer                            │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
-│  │   Auth   │  │   Task   │  │   User   │  │ Notifica │  │
-│  │ Service  │  │ Service  │  │ Service  │  │  tion    │  │
+│  │   Auth   │  │   Task   │  │   User   │  │  Group   │  │
+│  │ Service  │  │ Service  │  │ Service  │  │ Service  │  │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -121,24 +123,18 @@ cd taskmanagement
 ### 2. Configure Environment
 
 ```bash
-# Copy environment template
 cp .env.example .env
-
-# Edit .env with your credentials:
-# - MAIL credentials
+# Edit .env với MAIL credentials
 ```
 
 ### 3. Start Infrastructure
 
 ```bash
-# Start all infrastructure services
 docker-compose up -d postgres rabbitmq kafka redis
-
-# Check services are running
 docker-compose ps
 ```
 
-### 4. Generate JWT Keys (if not exists)
+### 4. Generate JWT Keys (nếu chưa có)
 
 ```bash
 cd backend/src/main/resources
@@ -152,16 +148,10 @@ openssl rsa -in privateKey.pem -pubout -out publicKey.pem
 
 ```bash
 cd backend
-
-# Development mode (hot reload)
 ./mvnw quarkus:dev
-
-# Or build and run
-./mvnw package -DskipTests
-java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-Backend sẽ chạy tại: **http://localhost:8080**
+Backend chạy tại: **http://localhost:8080**
 
 ### 6. Run Frontend Web
 
@@ -171,7 +161,7 @@ npm install
 npm run dev
 ```
 
-Web sẽ chạy tại: **http://localhost:3000**
+Web chạy tại: **http://localhost:3000**
 
 ### 7. Run Mobile App
 
@@ -190,16 +180,16 @@ npx expo start
 ```
 taskmanagement/
 ├── .github/
-│   └── workflows/           # CI/CD pipelines
-│       ├── ci.yml           # CI Pipeline
-│       └── deploy.yml        # Deployment Pipeline
-├── .env.example             # Environment template
-├── docker-compose.yml        # Infrastructure (dev)
-├── docker-compose.prod.yml  # Full stack (prod)
-├── docs/                    # Documentation
-├── backend/                 # Quarkus Backend
-├── frontend-web/            # React Web App
-├── frontend-app/            # React Native App
+│   └── workflows/
+│       ├── ci.yml
+│       └── deploy.yml
+├── .env.example
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── docs/
+├── backend/
+├── frontend-web/
+└── frontend-app/
 ```
 
 ### Backend Structure
@@ -207,54 +197,56 @@ taskmanagement/
 ```
 backend/
 ├── src/main/java/com/taskmanagement/
-│   ├── auth/                    # Authentication
-│   │   ├── controller/         # REST endpoints
-│   │   ├── service/            # Business logic
-│   │   ├── dto/                # Request/Response DTOs
-│   │   └── security/           # JWT handling
-│   ├── user/                    # User Management
+│   ├── auth/
 │   │   ├── controller/
-│   │   ├── service/
+│   │   ├── service/           # AuthService, JwtService, PasswordService
+│   │   └── dto/               # AuthResponse (có userId, role), LoginRequest, RegisterRequest
+│   ├── user/
+│   │   ├── controller/        # UserController (ADMIN-only: set enabled, role)
+│   │   ├── service/           # UserService (setUserEnabled, updateUserRole)
 │   │   ├── repository/
 │   │   ├── entity/
 │   │   ├── dto/
 │   │   └── mapper/
-│   ├── task/                    # Task Management (Core)
+│   ├── task/
 │   │   ├── controller/
-│   │   ├── service/
-│   │   ├── repository/
+│   │   ├── service/           # Có permission checks chi tiết
+│   │   ├── repository/        # findVisibleToUser()
 │   │   ├── entity/
 │   │   ├── dto/
 │   │   ├── mapper/
-│   │   ├── producer/           # RabbitMQ/Kafka producers
-│   │   ├── consumer/          # Message consumers
-│   │   └── scheduler/          # Scheduled jobs
-│   ├── notification/            # Email notifications
-│   │   └── mail/
-│   ├── audit/                   # Audit logging
-│   │   ├── kafka/
-│   │   └── consumer/
-│   ├── config/                  # Configuration
+│   │   ├── producer/
+│   │   ├── consumer/
+│   │   └── scheduler/
+│   ├── group/
+│   │   ├── controller/        # TaskGroupController (có removeMember)
+│   │   ├── service/           # TaskGroupService (có removeMember)
+│   │   ├── repository/
+│   │   ├── entity/            # TaskGroup, TaskGroupMember, GroupRole
+│   │   └── dto/
+│   ├── comment/
+│   │   ├── controller/        # CommentController REST (GET/POST)
+│   │   ├── service/           # CommentService (save + broadcast WS)
+│   │   ├── repository/        # CommentRepository
+│   │   ├── entity/            # TaskComment
+│   │   ├── dto/               # CommentDto, CreateCommentRequest
+│   │   └── websocket/         # TaskCommentWebSocket, WebSocketRoomManager
+│   ├── notification/mail/
+│   ├── audit/
+│   ├── config/
 │   │   ├── security/
-│   │   ├── rabbitmq/
-│   │   └── kafka/
-│   └── common/                  # Shared utilities
+│   │   └── rabbitmq/
+│   └── common/
 │       ├── exception/
-│       ├── response/
-│       ├── constants/
-│       └── utils/
+│       └── response/
 ├── src/main/resources/
-│   ├── application.yml         # Main config
-│   ├── application-dev.properties
-│   ├── application-prod.properties
-│   ├── privateKey.pem          # JWT signing key
-│   ├── publicKey.pem          # JWT verification key
-│   └── db/migration/          # Flyway migrations
-│       └── V1__init_schema.sql
-├── src/test/java/              # Unit tests
-├── pom.xml
-├── Dockerfile
-└── docker-compose.yml
+│   ├── application.yml
+│   ├── privateKey.pem
+│   ├── publicKey.pem
+│   └── db/migration/
+│       ├── V1__init_schema.sql
+│       └── V5__add_task_groups.sql
+└── pom.xml
 ```
 
 ### Frontend Web Structure
@@ -262,118 +254,84 @@ backend/
 ```
 frontend-web/
 ├── src/
-│   ├── components/              # Reusable components
-│   │   └── Layout.tsx         # Main layout
-│   ├── pages/                   # Page components
+│   ├── components/
+│   │   ├── Layout.tsx          # Admin badge + menu "Quản trị" (chỉ role ADMIN)
+│   │   └── CommentSection.tsx  # Chat/comment real-time component
+│   ├── hooks/
+│   │   └── useTaskWebSocket.ts # WebSocket hook (real-time comments)
+│   ├── pages/
 │   │   ├── LoginPage.tsx
 │   │   ├── DashboardPage.tsx
 │   │   ├── TasksPage.tsx
-│   │   ├── TaskDetailPage.tsx
+│   │   ├── TaskDetailPage.tsx  # Có CommentSection
 │   │   ├── CreateTaskPage.tsx
-│   │   └── UsersPage.tsx
-│   ├── services/               # API services
-│   │   ├── api.ts              # Axios instance
-│   │   ├── authService.ts
-│   │   ├── taskService.ts
-│   │   └── userService.ts
-│   ├── store/                   # Zustand stores
-│   │   ├── authStore.ts
-│   │   └── taskStore.ts
-│   ├── types/                   # TypeScript types
-│   │   └── index.ts
-│   ├── App.tsx                 # Main app with routing
-│   └── main.tsx                # Entry point
-├── public/
-├── package.json
-├── vite.config.ts
-├── tailwind.config.js
-├── tsconfig.json
-└── .env.example
-```
-
-### Mobile App Structure
-
-```
-frontend-app/
-├── src/
-│   ├── screens/                 # Screen components
-│   │   ├── LoginScreen.tsx
-│   │   ├── HomeScreen.tsx
-│   │   ├── TaskListScreen.tsx
-│   │   ├── TaskDetailScreen.tsx
-│   │   ├── CreateTaskScreen.tsx
-│   │   └── ProfileScreen.tsx
-│   ├── navigation/             # Navigation config
-│   │   └── AppNavigator.tsx
-│   ├── services/               # API services
+│   │   ├── UsersPage.tsx
+│   │   ├── GroupsPage.tsx      # Có remove member
+│   │   └── AdminPage.tsx       # Trang quản trị (chỉ ADMIN)
+│   ├── services/
 │   │   ├── api.ts
 │   │   ├── authService.ts
 │   │   ├── taskService.ts
-│   │   └── userService.ts
-│   ├── store/                  # Zustand stores
-│   │   └── authStore.ts
-│   ├── types/                  # TypeScript types
-│   │   └── index.ts
-│   └── App.tsx                 # Main app
-├── app.json
-├── package.json
-├── tsconfig.json
-└── .env.example
+│   │   ├── userService.ts      # Có setUserEnabled, updateUserRole
+│   │   ├── groupService.ts     # Có removeMember
+│   │   └── commentService.ts   # GET/POST comments
+│   ├── store/
+│   │   └── authStore.ts        # Lưu userId và role thực từ API
+│   ├── types/
+│   │   └── index.ts            # AuthResponse có userId, role; Comment type
+│   ├── App.tsx                 # Có AdminRoute guard + /admin route
+│   └── main.tsx
+└── package.json
 ```
 
 ---
 
 ## Backend Development
 
+### Authorization Annotations
+
+```java
+// Yêu cầu JWT hợp lệ (mọi user đã login)
+@Authenticated
+
+// Yêu cầu role ADMIN (system admin)
+@RolesAllowed("ADMIN")
+
+// Không yêu cầu xác thực (public)
+// (không annotation hoặc @PermitAll)
+```
+
+JWT token chứa `groups` = [user.role], nên `@RolesAllowed("ADMIN")` hoạt động đúng khi user có `role = "ADMIN"`.
+
 ### Create New Entity
 
-1. **Entity Class** - `src/main/java/com/taskmanagement/{module}/entity/`
+1. **Entity Class**
 
 ```java
 @Entity
 @Table(name = "my_entity")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class MyEntity extends PanacheEntityBase {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    
+
     @Column(nullable = false)
     private String name;
 }
 ```
 
-2. **DTO** - `src/main/java/com/taskmanagement/{module}/dto/`
+2. **DTO**
 
 ```java
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class MyEntityDto {
     private UUID id;
     private String name;
 }
 ```
 
-3. **Mapper** - `src/main/java/com/taskmanagement/{module}/mapper/`
-
-```java
-@Mapper(componentModel = "cdi")
-public interface MyEntityMapper {
-    MyEntityMapper INSTANCE = Mappers.getMapper(MyEntityMapper.class);
-    
-    MyEntityDto toDto(MyEntity entity);
-    MyEntity toEntity(MyEntityDto dto);
-}
-```
-
-4. **Repository** - `src/main/java/com/taskmanagement/{module}/repository/`
+3. **Repository**
 
 ```java
 @ApplicationScoped
@@ -384,14 +342,14 @@ public class MyEntityRepository implements PanacheRepositoryBase<MyEntity, UUID>
 }
 ```
 
-5. **Service** - `src/main/java/com/taskmanagement/{module}/service/`
+4. **Service**
 
 ```java
 @ApplicationScoped
 public class MyEntityService {
     @Inject
     MyEntityRepository repository;
-    
+
     public MyEntityDto findById(UUID id) {
         return repository.findByIdOptional(id)
             .map(mapper::toDto)
@@ -400,7 +358,7 @@ public class MyEntityService {
 }
 ```
 
-6. **Controller** - `src/main/java/com/taskmanagement/{module}/controller/`
+5. **Controller**
 
 ```java
 @Path("/api/my-entities")
@@ -408,23 +366,28 @@ public class MyEntityService {
 @Consumes(MediaType.APPLICATION_JSON)
 @Authenticated
 public class MyEntityController {
-    @Inject
-    MyEntityService service;
-    
+    @Inject MyEntityService service;
+
     @GET
     @Path("/{id}")
     public Response getById(@PathParam("id") UUID id) {
         return Response.ok(ApiResponse.success(service.findById(id))).build();
+    }
+
+    @DELETE
+    @Path("/{id}")
+    @RolesAllowed("ADMIN")  // Chỉ admin mới xóa được
+    public Response delete(@PathParam("id") UUID id) {
+        service.delete(id);
+        return Response.ok(ApiResponse.success("Deleted", null)).build();
     }
 }
 ```
 
 ### Add Flyway Migration
 
-Tạo file trong `src/main/resources/db/migration/`:
-
 ```sql
--- V2__add_new_table.sql
+-- V6__add_new_table.sql
 CREATE TABLE new_table (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
@@ -435,6 +398,25 @@ CREATE TABLE new_table (
 ---
 
 ## Frontend Web Development
+
+### Route Guards
+
+```typescript
+// Protected route — yêu cầu đăng nhập
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuthStore()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
+// Admin route — yêu cầu role ADMIN
+function AdminRoute({ children }) {
+  const { isAuthenticated, user } = useAuthStore()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (user?.role !== 'ADMIN') return <Navigate to="/dashboard" replace />
+  return <>{children}</>
+}
+```
 
 ### Add New API Service
 
@@ -451,67 +433,14 @@ export const myService = {
 }
 ```
 
-### Add New Page
+### Kiểm tra role trong component
 
 ```typescript
-// src/pages/MyPage.tsx
-import { useQuery } from '@tanstack/react-query'
-import { myService } from '../services/myService'
+const { user } = useAuthStore()
+const isAdmin = user?.role === 'ADMIN'
 
-export default function MyPage() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['my-data'],
-    queryFn: myService.getAll,
-  })
-
-  return <div>{/* Page content */}</div>
-}
-```
-
-### Add Route
-
-```typescript
-// src/App.tsx
-import MyPage from './pages/MyPage'
-
-<Route path="my-page" element={<MyPage />} />
-```
-
----
-
-## Mobile App Development
-
-### Add New Screen
-
-```typescript
-// src/screens/MyScreen.tsx
-import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
-
-export default function MyScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>My Screen</Text>
-    </View>
-  )
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-})
-```
-
-### Add Navigation
-
-```typescript
-// src/navigation/AppNavigator.tsx
-import MyScreen from '../screens/MyScreen'
-
-<Tab.Screen name="MyScreen" component={MyScreen} />
+// Chỉ render nếu là admin
+{isAdmin && <AdminPanel />}
 ```
 
 ---
@@ -533,7 +462,6 @@ import MyScreen from '../screens/MyScreen'
 ```
 
 #### POST /api/auth/login
-Đăng nhập bằng email và mật khẩu.
 
 **Request:**
 ```json
@@ -547,49 +475,100 @@ import MyScreen from '../screens/MyScreen'
 ```json
 {
   "success": true,
-  "message": "Success",
   "data": {
-    "accessToken": "JWT token",
+    "accessToken": "JWT...",
     "tokenType": "Bearer",
     "expiresIn": 3600,
+    "userId": "uuid",
     "email": "user@example.com",
     "name": "User Name",
-    "pictureUrl": "https://..."
+    "pictureUrl": null,
+    "role": "USER"
   }
 }
 ```
 
-### Tasks
+> `role` có thể là `"USER"` hoặc `"ADMIN"`. Frontend dùng giá trị này để hiện/ẩn menu Quản trị.
 
-#### POST /api/tasks
-Tạo công việc mới
+### Users (yêu cầu xác thực)
 
-**Request:**
+| Method | Path | Quyền | Mô tả |
+|--------|------|-------|-------|
+| GET | `/api/users/me` | Authenticated | Thông tin user hiện tại |
+| GET | `/api/users` | Authenticated | Danh sách tất cả user |
+| GET | `/api/users/{id}` | Authenticated | Lấy user theo ID |
+| GET | `/api/users/email/{email}` | Authenticated | Tìm theo email |
+| PATCH | `/api/users/{id}/enabled` | **ADMIN** | Bật/tắt tài khoản |
+| PATCH | `/api/users/{id}/role` | **ADMIN** | Đổi role user |
+
+**PATCH /api/users/{id}/enabled**
+```json
+{ "enabled": false }
+```
+
+**PATCH /api/users/{id}/role**
+```json
+{ "role": "ADMIN" }
+```
+
+### Tasks (yêu cầu xác thực)
+
+| Method | Path | Quyền | Mô tả |
+|--------|------|-------|-------|
+| POST | `/api/tasks` | Group ADMIN | Tạo task |
+| GET | `/api/tasks/my` | Authenticated | Task hiển thị được |
+| GET | `/api/tasks/assigned` | Authenticated | Task được giao cho tôi |
+| GET | `/api/tasks/created` | Authenticated | Task tôi tạo |
+| GET | `/api/tasks/{id}` | Assignee/Assigner/Group ADMIN | Chi tiết task |
+| PUT | `/api/tasks/{id}` | Group ADMIN hoặc Assigner | Cập nhật task |
+| PATCH | `/api/tasks/{id}/status` | Assignee hoặc Group ADMIN | Đổi trạng thái |
+| PATCH | `/api/tasks/{id}/assign` | Group ADMIN hoặc Assigner | Giao lại task |
+
+### Groups (yêu cầu xác thực)
+
+| Method | Path | Quyền | Mô tả |
+|--------|------|-------|-------|
+| GET | `/api/groups` | Authenticated | Nhóm của tôi |
+| POST | `/api/groups` | Authenticated | Tạo nhóm mới |
+| GET | `/api/groups/{id}/members` | Group MEMBER | Xem thành viên |
+| POST | `/api/groups/{id}/members` | Group ADMIN | Thêm thành viên |
+| PATCH | `/api/groups/{id}/members/{userId}/role` | Group ADMIN | Đổi role thành viên |
+| DELETE | `/api/groups/{id}/members/{userId}` | Group ADMIN | Xóa thành viên |
+
+### Comments & Real-time Chat
+
+| Method | Path | Quyền | Mô tả |
+|--------|------|-------|-------|
+| GET | `/api/tasks/{taskId}/comments` | Authenticated | Lấy toàn bộ comments của task |
+| POST | `/api/tasks/{taskId}/comments` | Authenticated | Thêm comment mới |
+
+**WebSocket endpoint:**
+```
+ws://localhost:8080/ws/task/{taskId}
+```
+
+- Mỗi task có một "room" riêng. Khi user mở trang Task Detail, frontend kết nối WS.
+- Khi ai đó POST comment mới qua REST, backend lưu DB rồi broadcast message đến tất cả client đang kết nối cùng task.
+- Message format:
 ```json
 {
-  "title": "string (required)",
-  "content": "string (optional)",
-  "point": 10,
-  "priority": "LOW|MEDIUM|HIGH|URGENT",
-  "startTime": "2024-01-15T10:00:00Z",
-  "endTime": "2024-01-20T18:00:00Z",
-  "assigneeId": "UUID (required)"
+  "type": "NEW_COMMENT",
+  "comment": {
+    "id": "uuid",
+    "taskId": "uuid",
+    "authorId": "uuid",
+    "authorName": "string",
+    "authorEmail": "string",
+    "content": "string",
+    "createdAt": "2026-05-30T10:00:00Z"
+  }
 }
 ```
 
-#### GET /api/tasks/my
-Lấy danh sách công việc của user
-
-#### PATCH /api/tasks/{id}/status
-Cập nhật trạng thái
-
-**Request:**
-```json
-{
-  "status": "OPEN|PENDING|PROCESS|DONE|CANCEL",
-  "cancelReason": "string (optional)"
-}
-```
+**Frontend flow:**
+1. `useQuery` fetch toàn bộ comments khi mở trang (REST)
+2. `useTaskWebSocket` mở WS connection → nhận `NEW_COMMENT` → cập nhật React Query cache
+3. Khi submit comment: POST REST → response trả về ngay → hiển thị; WS broadcast đến người khác
 
 ### Task Status Flow
 
@@ -600,13 +579,44 @@ OPEN ──→ PENDING ──→ PROCESS ──→ DONE
  CANCEL    CANCEL       CANCEL
 ```
 
-### Users
+---
 
-#### GET /api/users/me
-Lấy thông tin user hiện tại
+## Authorization Model
 
-#### GET /api/users
-Lấy danh sách tất cả users
+Hệ thống có 2 cấp phân quyền độc lập:
+
+### 1. System Role (global)
+
+Lưu trong `users.role`, nhúng vào JWT claim `groups`.
+
+| Role | Mô tả | Quyền thêm |
+|------|-------|------------|
+| `USER` | Mặc định | Không có quyền đặc biệt |
+| `ADMIN` | Quản trị viên hệ thống | Bật/tắt tài khoản, đổi role bất kỳ user |
+
+Được kiểm tra bằng `@RolesAllowed("ADMIN")` ở backend, và `user?.role === 'ADMIN'` ở frontend.
+
+### 2. Group Role (per-group)
+
+Lưu trong `task_group_members.role`.
+
+| Role | Mô tả |
+|------|-------|
+| `ADMIN` | Admin nhóm — tạo task, thêm/xóa/đổi role thành viên |
+| `MEMBER` | Thành viên — xem task, cập nhật status task của mình |
+
+### Permission Matrix
+
+| Hành động | Điều kiện |
+|-----------|-----------|
+| Tạo task trong group | Group ADMIN |
+| Xem task | Assignee OR Assigner OR Group ADMIN |
+| Cập nhật task | Group ADMIN OR Assigner |
+| Cập nhật status | Assignee OR Group ADMIN |
+| Thêm/xóa thành viên | Group ADMIN (không tự xóa mình) |
+| Đổi role thành viên | Group ADMIN |
+| Bật/tắt tài khoản user | System ADMIN |
+| Đổi role user | System ADMIN |
 
 ---
 
@@ -615,37 +625,68 @@ Lấy danh sách tất cả users
 ### Tables
 
 #### users
-| Column | Type | Constraints |
-|--------|------|-------------|
+| Column | Type | Ghi chú |
+|--------|------|---------|
 | id | UUID | PK |
 | email | VARCHAR(255) | UNIQUE, NOT NULL |
 | name | VARCHAR(255) | |
 | picture_url | VARCHAR(500) | |
 | password_hash | VARCHAR(500) | |
-| role | VARCHAR(50) | DEFAULT 'USER' |
-| enabled | BOOLEAN | DEFAULT true |
-| created_at | TIMESTAMPTZ | NOT NULL |
-| updated_at | TIMESTAMPTZ | NOT NULL |
+| role | VARCHAR(50) | `USER` hoặc `ADMIN` |
+| enabled | BOOLEAN | Tài khoản bị vô hiệu hóa khi false |
+| created_at | TIMESTAMPTZ | |
+| updated_at | TIMESTAMPTZ | |
 | last_login_at | TIMESTAMPTZ | |
 
 #### tasks
-| Column | Type | Constraints |
-|--------|------|-------------|
+| Column | Type | Ghi chú |
+|--------|------|---------|
 | id | UUID | PK |
 | title | VARCHAR(255) | NOT NULL |
 | content | TEXT | |
 | point | INTEGER | DEFAULT 0 |
-| priority | VARCHAR(20) | NOT NULL |
-| status | VARCHAR(20) | NOT NULL |
+| priority | VARCHAR(20) | LOW/MEDIUM/HIGH/URGENT |
+| status | VARCHAR(20) | OPEN/PENDING/PROCESS/DONE/CANCEL |
 | start_time | TIMESTAMPTZ | NOT NULL |
 | end_time | TIMESTAMPTZ | NOT NULL |
 | assigner_id | UUID | FK → users |
 | assignee_id | UUID | FK → users |
-| created_at | TIMESTAMPTZ | NOT NULL |
-| updated_at | TIMESTAMPTZ | NOT NULL |
+| group_id | UUID | FK → task_groups (nullable) |
+| created_at | TIMESTAMPTZ | |
+| updated_at | TIMESTAMPTZ | |
 | completed_at | TIMESTAMPTZ | |
 | cancelled_at | TIMESTAMPTZ | |
 | cancel_reason | TEXT | |
+
+#### task_groups
+| Column | Type | Ghi chú |
+|--------|------|---------|
+| id | UUID | PK |
+| name | VARCHAR(255) | NOT NULL |
+| owner_id | UUID | FK → users |
+| created_at | TIMESTAMPTZ | |
+| updated_at | TIMESTAMPTZ | |
+
+#### task_group_members
+| Column | Type | Ghi chú |
+|--------|------|---------|
+| id | UUID | PK |
+| group_id | UUID | FK → task_groups |
+| user_id | UUID | FK → users |
+| role | VARCHAR(20) | `ADMIN` hoặc `MEMBER` |
+| created_at | TIMESTAMPTZ | |
+
+#### task_history
+| Column | Type | Ghi chú |
+|--------|------|---------|
+| id | UUID | PK |
+| task_id | UUID | FK → tasks |
+| user_id | UUID | FK → users |
+| action | VARCHAR(50) | |
+| old_status | VARCHAR(20) | |
+| new_status | VARCHAR(20) | |
+| changes | JSONB | |
+| created_at | TIMESTAMPTZ | |
 
 ---
 
@@ -653,42 +694,32 @@ Lấy danh sách tất cả users
 
 ### RabbitMQ Queues
 
-| Queue | Purpose | Consumer |
-|-------|---------|----------|
-| task.created.email | Gửi email khi tạo task | TaskEventConsumer |
-| task.deadline.warning | Cảnh báo deadline | DeadlineCheckScheduler |
-| task.done.notification | Thông báo hoàn thành | TaskEventConsumer |
+| Queue | Purpose |
+|-------|---------|
+| task.created.email | Gửi email khi tạo task |
+| task.deadline.warning | Cảnh báo deadline |
+| task.done.notification | Thông báo hoàn thành |
 
 ### Kafka Topics
 
 | Topic | Purpose |
 |-------|---------|
-| task-events | Audit log các sự kiện task |
-| user-events | Audit log các sự kiện user |
+| task-events | Audit log sự kiện task |
+| user-events | Audit log sự kiện user |
 
 ---
 
 ## Testing
 
-### Backend Tests
-
 ```bash
-cd backend
-./mvnw test
-```
+# Backend
+cd backend && ./mvnw test
 
-### Frontend Web Tests
+# Frontend Web
+cd frontend-web && npm run test
 
-```bash
-cd frontend-web
-npm run test
-```
-
-### Mobile App Tests
-
-```bash
-cd frontend-app
-npm run test
+# Mobile
+cd frontend-app && npm run test
 ```
 
 ---
@@ -697,93 +728,69 @@ npm run test
 
 ### GitHub Actions Workflows
 
-#### CI Pipeline (ci.yml)
-Tự động chạy khi có push hoặc PR:
+#### ci.yml — chạy khi push/PR
 - Backend: Build + Unit Tests (Java 21)
 - Frontend Web: Lint + Type Check + Build
 - Mobile App: Type Check
 - Docker Build (trên main branch)
 
-#### Deploy Pipeline (deploy.yml)
-Chạy khi có release hoặc manual trigger:
-- Build Docker image
-- Push lên registry
-- Deploy lên server
-- Health check
+#### deploy.yml — chạy khi release hoặc manual trigger
+- Build Docker image → Push registry → Deploy → Health check
 
 ### Secrets Required
 
 ```
-DOCKERHUB_USERNAME     # Docker Hub username
-DOCKERHUB_TOKEN       # Docker Hub access token
-SERVER_HOST          # Production server IP
-SERVER_USER          # SSH user
-SERVER_SSH_KEY       # SSH private key
-FIREBASE_SERVICE_ACCOUNT  # Firebase service account
-FIREBASE_PROJECT_ID   # Firebase project ID
-FIREBASE_TOKEN       # Firebase CLI token
+DOCKERHUB_USERNAME
+DOCKERHUB_TOKEN
+SERVER_HOST
+SERVER_USER
+SERVER_SSH_KEY
+FIREBASE_SERVICE_ACCOUNT
+FIREBASE_PROJECT_ID
+FIREBASE_TOKEN
 ```
 
 ---
 
 ## Deployment
 
-### Docker Deployment
+### Docker
 
 ```bash
-# Build image
 cd backend
 docker build -t task-management-backend .
-
-# Run with docker-compose
 docker-compose -f ../docker-compose.prod.yml up -d
 ```
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| DB_HOST | PostgreSQL host | localhost |
-| DB_PORT | PostgreSQL port | 5432 |
-| DB_NAME | Database name | taskmanagement |
-| DB_USERNAME | Database user | taskuser |
-| DB_PASSWORD | Database password | taskpass123 |
-| RABBITMQ_HOST | RabbitMQ host | localhost |
-| RABBITMQ_PORT | RabbitMQ port | 5672 |
-| KAFKA_HOST | Kafka host | localhost |
-| KAFKA_PORT | Kafka port | 9092 |
+| Variable | Default | Mô tả |
+|----------|---------|-------|
+| DB_HOST | localhost | PostgreSQL host |
+| DB_PORT | 5432 | PostgreSQL port |
+| DB_NAME | taskmanagement | Database name |
+| DB_USERNAME | taskuser | |
+| DB_PASSWORD | taskpass123 | |
+| RABBITMQ_HOST | localhost | |
+| RABBITMQ_PORT | 5672 | |
+| KAFKA_HOST | localhost | |
+| KAFKA_PORT | 9092 | |
 
 ---
 
 ## Troubleshooting
 
-### Database Connection Issues
-
 ```bash
-# Check PostgreSQL
+# Database
 docker-compose logs postgres
-
-# Verify connection
 pg_isready -h localhost -p 5432 -U taskuser
-```
 
-### Message Queue Issues
-
-```bash
-# Check RabbitMQ
+# RabbitMQ
 docker-compose logs rabbitmq
+# UI: http://localhost:15672 (guest/guest)
 
-# Access RabbitMQ UI
-# http://localhost:15672 (guest/guest)
-```
-
-### Kafka Issues
-
-```bash
-# Check Kafka
+# Kafka
 docker-compose logs kafka
-
-# List topics
 docker exec taskmanagement-kafka kafka-topics --list --bootstrap-server localhost:9092
 ```
 

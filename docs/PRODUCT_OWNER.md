@@ -3,17 +3,18 @@
 ## Mục Lục
 1. [Tổng Quan Dự Án](#tổng-quan-dự-án)
 2. [Mục Tiêu & Phạm Vi](#mục-tiêu--phạm-vi)
-3. [User Stories](#user-stories)
-4. [Sơ Đồ Luồng Nghiệp Vụ](#sơ-đồ-luồng-nghiệp-vụ)
-5. [Yêu Cầu Chức Năng](#yêu-cầu-chức-năng)
-6. [Yêu Cầu Phi Chức Năng](#yêu-cầu-phi-chức-năng)
-7. [Thiết Kế Database](#thiết-kế-database)
-8. [API Specification](#api-specification)
-9. [Mockups & Wireframes](#mockups--wireframes)
-10. [Definition of Done](#definition-of-done)
-11. [Kế Hoạch Phát Triển](#kế-hoạch-phát-triển)
-12. [Rủi Ro & Mitigation](#rủi-ro--mitigation)
-13. [CI/CD & Deployment](#cicd--deployment)
+3. [Mô Hình Phân Quyền](#mô-hình-phân-quyền)
+4. [User Stories](#user-stories)
+5. [Sơ Đồ Luồng Nghiệp Vụ](#sơ-đồ-luồng-nghiệp-vụ)
+6. [Yêu Cầu Chức Năng](#yêu-cầu-chức-năng)
+7. [Yêu Cầu Phi Chức Năng](#yêu-cầu-phi-chức-năng)
+8. [Thiết Kế Database](#thiết-kế-database)
+9. [API Specification](#api-specification)
+10. [Mockups & Wireframes](#mockups--wireframes)
+11. [Definition of Done](#definition-of-done)
+12. [Kế Hoạch Phát Triển](#kế-hoạch-phát-triển)
+13. [Rủi Ro & Mitigation](#rủi-ro--mitigation)
+14. [CI/CD & Deployment](#cicd--deployment)
 
 ---
 
@@ -24,9 +25,9 @@
 | Thông tin | Chi tiết |
 |-----------|----------|
 | Tên dự án | Task Management System |
-| Phiên bản | 1.0.0 |
+| Phiên bản | 1.1.0 |
 | Ngày bắt đầu | 2024 |
-| Mục tiêu | Quản lý công việc hiệu quả cho team |
+| Mục tiêu | Quản lý công việc hiệu quả theo nhóm |
 | Số lượng user dự kiến | 50-100 users |
 
 ### Công Nghệ Sử Dụng
@@ -38,7 +39,7 @@
 | Backend API | Quarkus + Java 21 |
 | Database | PostgreSQL 16 |
 | Message Queue | RabbitMQ 3.13 |
-| Event Streaming | Apache Kafka 7.5 |
+| Event Streaming | Apache Kafka |
 | Authentication | Email/password + JWT |
 
 ---
@@ -47,15 +48,20 @@
 
 ### Mục Tiêu Chính
 
-1. **Quản lý công việc tập trung**
-   - Tạo, cập nhật, theo dõi tiến độ
-   - Giao việc giữa các thành viên
+1. **Quản lý công việc theo nhóm**
+   - Tổ chức công việc trong các nhóm (groups)
+   - Giao việc giữa các thành viên trong nhóm
+   - Phân quyền rõ ràng: Admin nhóm và thành viên
 
 2. **Giao tiếp hiệu quả**
    - Thông báo email tự động
    - Cảnh báo deadline
 
-3. **Transparency & Accountability**
+3. **Quản trị hệ thống**
+   - Quản lý tài khoản người dùng (bật/tắt, phân quyền)
+   - Phân vai trò: System Admin và User thường
+
+4. **Transparency & Accountability**
    - Audit log các thay đổi
    - Theo dõi người tạo/người nhận
 
@@ -65,17 +71,20 @@
 |-----|-----------|----------|
 | 1 | Authentication bằng email/password | Must |
 | 2 | CRUD Task | Must |
-| 3 | Giao việc cho user khác | Must |
+| 3 | Giao việc cho thành viên trong nhóm | Must |
 | 4 | Cập nhật trạng thái task | Must |
 | 5 | Email notification | Must |
 | 6 | Deadline warning | Must |
 | 7 | Dashboard thống kê | Should |
-| 8 | Web application | Must |
-| 9 | Mobile application (iOS/Android) | Should |
+| 8 | Quản lý nhóm (Groups) | Must |
+| 9 | Phân quyền 2 cấp (System + Group) | Must |
+| 10 | Trang Admin quản trị hệ thống | Must |
+| 11 | Web application | Must |
+| 12 | Mobile application (iOS/Android) | Should |
 
 ### Phạm Vi (Out of Scope)
 
-- SSO với các provider khác
+- SSO với provider ngoài
 - Integration với Slack/Teams
 - File attachment
 - Comment/Discussion
@@ -86,6 +95,42 @@
 
 ---
 
+## Mô Hình Phân Quyền
+
+Hệ thống có **2 cấp phân quyền độc lập**:
+
+### Cấp 1: System Role (toàn hệ thống)
+
+| Role | Ai có | Quyền |
+|------|-------|-------|
+| `USER` | Tất cả người dùng mới | Dùng hệ thống bình thường |
+| `ADMIN` | Do Admin cấp | Quản lý tài khoản, đổi role bất kỳ user |
+
+> System Admin chỉ có thể được cấp bởi một Admin khác (thông qua trang Quản trị).
+
+### Cấp 2: Group Role (trong từng nhóm)
+
+| Role | Ai có | Quyền |
+|------|-------|-------|
+| `ADMIN` | Người tạo nhóm, hoặc được promote | Tạo task, thêm/xóa/đổi quyền thành viên |
+| `MEMBER` | Thành viên thường | Cập nhật trạng thái task của mình |
+
+### Ma trận quyền
+
+| Hành động | USER | Group MEMBER | Group ADMIN | System ADMIN |
+|-----------|------|--------------|-------------|--------------|
+| Xem danh sách user | ✅ | ✅ | ✅ | ✅ |
+| Tạo nhóm | ✅ | ✅ | ✅ | ✅ |
+| Xem thành viên nhóm | ✅ (nếu là thành viên) | ✅ | ✅ | ✅ |
+| Tạo task | ❌ | ❌ | ✅ | ✅ |
+| Cập nhật status task | ❌ (trừ task của mình) | ✅ | ✅ | ✅ |
+| Thêm thành viên nhóm | ❌ | ❌ | ✅ | ✅ |
+| Xóa thành viên nhóm | ❌ | ❌ | ✅ | ✅ |
+| Bật/tắt tài khoản user | ❌ | ❌ | ❌ | ✅ |
+| Đổi System Role | ❌ | ❌ | ❌ | ✅ |
+
+---
+
 ## User Stories
 
 ### US-001: Đăng Nhập Hệ Thống
@@ -93,121 +138,134 @@
 **Mô tả:** Là một user, tôi muốn đăng nhập bằng email và mật khẩu để sử dụng hệ thống.
 
 **Acceptance Criteria:**
-- [ ] User có thể đăng nhập bằng email và mật khẩu
-- [ ] Hệ thống tạo user mới nếu chưa tồn tại
-- [ ] User nhận được JWT token sau khi đăng nhập
-- [ ] Token có hiệu lực 24 giờ
+- [x] User có thể đăng nhập bằng email và mật khẩu
+- [x] User nhận được JWT token sau khi đăng nhập
+- [x] Token có hiệu lực 24 giờ
+- [x] Response trả về role thực của user (USER/ADMIN)
 
-### US-002: Tạo Công Việc Mới
+### US-002: Tạo Nhóm và Quản Lý Thành Viên
 
-**Mô tả:** Là một user, tôi muốn tạo công việc và giao cho đồng nghiệp.
-
-**Acceptance Criteria:**
-- [ ] User nhập được tiêu đề, nội dung, độ ưu tiên, thời gian
-- [ ] User chọn được người được giao từ danh sách
-- [ ] Sau khi tạo, email được gửi đến người được giao
-- [ ] Task được lưu vào database
-
-### US-003: Cập Nhật Trạng Thái Công Việc
-
-**Mô tả:** Là người nhận công việc, tôi muốn cập nhật trạng thái công việc.
+**Mô tả:** Là một user, tôi muốn tạo nhóm và quản lý thành viên.
 
 **Acceptance Criteria:**
-- [ ] Người nhận có thể thay đổi: OPEN → PENDING → PROCESS → DONE
-- [ ] Có thể hủy công việc với lý do
-- [ ] Khi hoàn thành, email thông báo gửi đến cả 2 bên
+- [x] User tạo được nhóm mới (tự động trở thành Admin nhóm)
+- [x] Admin nhóm thêm được thành viên với role MEMBER hoặc ADMIN
+- [x] Admin nhóm thay đổi được role của thành viên
+- [x] Admin nhóm xóa được thành viên (không tự xóa mình)
+- [x] Chỉ thành viên mới xem được danh sách thành viên nhóm
 
-### US-004: Theo Dõi Deadline
+### US-003: Tạo Công Việc Mới
+
+**Mô tả:** Là Admin nhóm, tôi muốn tạo công việc và giao cho thành viên trong nhóm.
+
+**Acceptance Criteria:**
+- [x] Chỉ Admin nhóm mới tạo được task trong nhóm
+- [x] Assignee phải là thành viên của nhóm đó
+- [x] Sau khi tạo, email gửi đến người được giao
+- [x] Task được lưu vào database
+
+### US-004: Cập Nhật Trạng Thái Công Việc
+
+**Mô tả:** Là người nhận công việc, tôi muốn cập nhật trạng thái.
+
+**Acceptance Criteria:**
+- [x] Người nhận có thể thay đổi: OPEN → PENDING → PROCESS → DONE
+- [x] Có thể hủy công việc với lý do
+- [x] Admin nhóm cũng có thể cập nhật status
+- [x] Khi hoàn thành, email gửi đến cả 2 bên
+
+### US-005: Theo Dõi Deadline
 
 **Mô tả:** Hệ thống tự động cảnh báo khi công việc sắp hết hạn.
 
 **Acceptance Criteria:**
-- [ ] Scheduler chạy mỗi 10 phút
-- [ ] 1 giờ trước deadline, email cảnh báo được gửi
-- [ ] Email gửi đến người được giao
+- [x] Scheduler chạy mỗi 10 phút
+- [x] 1 giờ trước deadline, email cảnh báo được gửi
+- [x] Email gửi đến người được giao
 
-### US-005: Xem Dashboard
+### US-006: Xem Dashboard
 
 **Mô tả:** Là một user, tôi muốn xem tổng quan công việc của mình.
 
 **Acceptance Criteria:**
-- [ ] Hiển thị số lượng task theo từng trạng thái
-- [ ] Hiển thị danh sách task khẩn cấp
-- [ ] Thống kê cập nhật real-time
+- [x] Hiển thị số lượng task theo từng trạng thái
+- [x] Hiển thị danh sách task khẩn cấp
+- [x] Bell icon hiển thị số task đang active
 
-### US-006: Tìm Kiếm & Lọc Công Việc
+### US-007: Trang Quản Trị Hệ Thống (Admin)
+
+**Mô tả:** Là System Admin, tôi muốn quản lý tài khoản người dùng.
+
+**Acceptance Criteria:**
+- [x] Chỉ user có role ADMIN mới vào được trang /admin
+- [x] Hiển thị danh sách toàn bộ user với trạng thái
+- [x] Admin bật/tắt được tài khoản user (không tự tắt mình)
+- [x] Admin thay đổi được role của user (USER ↔ ADMIN)
+- [x] User bị vô hiệu hóa không thể đăng nhập
+- [x] Menu "Quản trị" chỉ hiện với user có role ADMIN
+
+### US-008: Tìm Kiếm & Lọc Công Việc
 
 **Mô tả:** Là một user, tôi muốn tìm kiếm và lọc công việc.
 
 **Acceptance Criteria:**
-- [ ] Có thể lọc theo trạng thái
-- [ ] Có thể tìm kiếm theo tiêu đề
-- [ ] Kết quả lọc cập nhật ngay lập tức
+- [x] Có thể lọc theo trạng thái
+- [x] Có thể tìm kiếm theo tiêu đề
 
 ---
 
 ## Sơ Đồ Luồng Nghiệp Vụ
 
+### Luồng Tạo Nhóm & Giao Việc
+
+```
+User tạo nhóm
+     │
+     ▼
+Trở thành Admin nhóm
+     │
+     ▼
+Thêm thành viên (role MEMBER hoặc ADMIN)
+     │
+     ▼
+Admin tạo task ──→ Backend ──→ Lưu DB ──→ RabbitMQ ──→ Email assignee
+                      │
+                      ▼
+                   Kafka (Audit)
+```
+
+### Luồng Phân Quyền System Admin
+
+```
+System Admin đăng nhập
+     │
+     ▼
+Vào trang /admin (chỉ ADMIN mới vào được)
+     │
+     ├──→ Bật/tắt tài khoản user
+     │         │
+     │         ▼
+     │    PATCH /api/users/{id}/enabled
+     │
+     └──→ Đổi role user
+               │
+               ▼
+          PATCH /api/users/{id}/role
+```
+
 ### Luồng Tạo Công Việc
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  User A     │     │   Backend   │     │  RabbitMQ   │
-│  Tạo Task   │────▶│   Service   │────▶│   Queue     │
-└─────────────┘     └──────┬───────┘     └──────┬──────┘
-                           │                     │
-                           ▼                     ▼
-                    ┌──────────────┐     ┌─────────────┐
-                    │  PostgreSQL  │     │   Email     │
-                    │  (Save Task) │     │   Service   │
-                    └──────────────┘     └─────────────┘
-                           │                     │
-                           │                     ▼
-                           │              ┌─────────────┐
-                           │              │  User B     │
-                           │              │  (Nhận mail)│
-                           │              └─────────────┘
-                           ▼
-                    ┌──────────────┐
-                    │    Kafka     │
-                    │ (Audit Log)  │
-                    └──────────────┘
-```
-
-### Luồng Deadline Warning
-
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Scheduler  │     │   Backend    │     │  RabbitMQ   │
-│  (10 phút)  │────▶│   Service    │────▶│   Queue     │
-└─────────────┘     └──────┬───────┘     └──────┬──────┘
-                           │                     │
-                           ▼                     ▼
-                    ┌──────────────┐     ┌─────────────┐
-                    │  PostgreSQL  │     │   Email     │
-                    │(Query Tasks) │     │   Service   │
-                    └──────────────┘     └─────────────┘
-```
-
-### Luồng Hoàn Thành Task
-
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  User B    │     │   Backend    │     │  RabbitMQ   │
-│  DONE Task │────▶│   Service    │────▶│   Queue     │
-└─────────────┘     └──────┬───────┘     └──────┬──────┘
-                           │                     │
-                           ▼                     ▼
-                    ┌──────────────┐     ┌─────────────┐
-                    │  PostgreSQL  │     │   Email     │
-                    │(Update Status│     │  × 2 Emails │
-                    └──────────────┘     │(Assigner +  │
-                           │             │ Assignee)   │
-                           ▼             └─────────────┘
-                    ┌──────────────┐
-                    │    Kafka     │
-                    │ (Audit Log)  │
-                    └──────────────┘
+┌─────────────────┐     ┌──────────────┐     ┌─────────────┐
+│  Group Admin    │     │   Backend    │     │  RabbitMQ   │
+│  Tạo Task       │────▶│   Service    │────▶│   Queue     │
+└─────────────────┘     └──────┬───────┘     └──────┬──────┘
+                               │                     │
+                               ▼                     ▼
+                        ┌──────────────┐     ┌─────────────┐
+                        │  PostgreSQL  │     │   Email     │
+                        │  (Save Task) │     │  Assignee   │
+                        └──────────────┘     └─────────────┘
 ```
 
 ---
@@ -216,78 +274,81 @@
 
 ### FR-001: Authentication
 
-| ID | Yêu cầu | Mô tả | Priority |
-|----|---------|-------|----------|
-| FR-001.1 | Email/password Login | Đăng nhập/đăng ký bằng email và mật khẩu | Must |
-| FR-001.2 | JWT Token | Generate JWT sau khi login | Must |
-| FR-001.3 | Token Expiry | Token hết hạn sau 24h | Must |
-| FR-001.4 | Auto-create User | Tạo user mới nếu chưa tồn tại | Must |
+| ID | Yêu cầu | Priority |
+|----|---------|----------|
+| FR-001.1 | Email/password Login | Must |
+| FR-001.2 | JWT Token với role thực | Must |
+| FR-001.3 | Token hết hạn sau 24h | Must |
 
-### FR-002: Task Management
+### FR-002: Group Management
 
-| ID | Yêu cầu | Mô tả | Priority |
-|----|---------|-------|----------|
-| FR-002.1 | Create Task | Tạo task mới | Must |
-| FR-002.2 | Update Task | Cập nhật thông tin task | Should |
-| FR-002.3 | Update Status | Cập nhật trạng thái task | Must |
-| FR-002.4 | Assign Task | Giao task cho user khác | Must |
-| FR-002.5 | List Tasks | Liệt kê danh sách task | Must |
-| FR-002.6 | Filter Tasks | Lọc task theo trạng thái | Should |
-| FR-002.7 | Search Tasks | Tìm kiếm task theo tên | Should |
+| ID | Yêu cầu | Priority |
+|----|---------|----------|
+| FR-002.1 | Tạo nhóm mới | Must |
+| FR-002.2 | Thêm thành viên nhóm | Must |
+| FR-002.3 | Xóa thành viên nhóm | Must |
+| FR-002.4 | Đổi role thành viên (ADMIN/MEMBER) | Must |
+| FR-002.5 | Xem danh sách thành viên | Must |
 
-### FR-003: Notifications
+### FR-003: Task Management
 
-| ID | Yêu cầu | Mô tả | Priority |
-|----|---------|-------|----------|
-| FR-003.1 | Task Created Email | Gửi email khi tạo task | Must |
-| FR-003.2 | Deadline Warning | Cảnh báo 1h trước deadline | Must |
-| FR-003.3 | Task Done Email | Gửi email khi task hoàn thành | Must |
+| ID | Yêu cầu | Priority |
+|----|---------|----------|
+| FR-003.1 | Tạo task (chỉ Group Admin) | Must |
+| FR-003.2 | Cập nhật task | Should |
+| FR-003.3 | Cập nhật status (assignee/group admin) | Must |
+| FR-003.4 | Giao lại task | Must |
+| FR-003.5 | Lọc task theo status | Should |
+| FR-003.6 | Task visibility theo quyền | Must |
 
-### FR-004: Dashboard
+### FR-004: Admin Panel
 
-| ID | Yêu cầu | Mô tả | Priority |
-|----|---------|-------|----------|
-| FR-004.1 | Task Stats | Thống kê số task theo trạng thái | Should |
-| FR-004.2 | Urgent Tasks | Hiển thị task khẩn cấp | Should |
-| FR-004.3 | Quick Actions | Tạo task nhanh | Should |
+| ID | Yêu cầu | Priority |
+|----|---------|----------|
+| FR-004.1 | Trang /admin chỉ ADMIN mới vào | Must |
+| FR-004.2 | Xem danh sách toàn bộ user | Must |
+| FR-004.3 | Bật/tắt tài khoản user | Must |
+| FR-004.4 | Đổi System Role (USER/ADMIN) | Must |
+| FR-004.5 | Menu "Quản trị" ẩn với non-admin | Must |
+
+### FR-005: Notifications
+
+| ID | Yêu cầu | Priority |
+|----|---------|----------|
+| FR-005.1 | Email khi tạo task | Must |
+| FR-005.2 | Email cảnh báo deadline (1h) | Must |
+| FR-005.3 | Email khi task hoàn thành | Must |
 
 ---
 
 ## Yêu Cầu Phi Chức Năng
 
-### NFR-001: Performance
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| API Response Time | < 200ms (p95) | Backend metrics |
-| Page Load Time | < 2s | Frontend analytics |
-| Concurrent Users | 100 users | Load testing |
-
-### NFR-002: Availability
-
-| Metric | Target |
-|--------|--------|
-| Uptime | 99.5% |
-| Planned Maintenance | < 4h/month |
-| Recovery Time | < 30 phút |
-
-### NFR-003: Security
+### NFR-001: Security
 
 | Requirement | Implementation |
 |-------------|----------------|
 | Authentication | Email/password + JWT |
-| Data Encryption | HTTPS (TLS 1.2+) |
-| Input Validation | Server-side validation |
+| Authorization | 2 cấp: System Role + Group Role |
+| Route protection | Backend: @Authenticated, @RolesAllowed; Frontend: route guards |
+| User endpoints | Yêu cầu xác thực (không public) |
+| Admin endpoints | Yêu cầu role ADMIN |
+| HTTPS | TLS 1.2+ |
 | SQL Injection | Parameterized queries (Panache) |
 
-### NFR-004: Scalability
+### NFR-002: Performance
 
-| Component | Scaling Strategy |
-|-----------|------------------|
-| Backend | Horizontal scaling (stateless) |
-| Database | Connection pooling |
-| Message Queue | RabbitMQ cluster |
-| Kafka | Partition replication |
+| Metric | Target |
+|--------|--------|
+| API Response Time | < 200ms (p95) |
+| Page Load Time | < 2s |
+| Concurrent Users | 100 users |
+
+### NFR-003: Availability
+
+| Metric | Target |
+|--------|--------|
+| Uptime | 99.5% |
+| Recovery Time | < 30 phút |
 
 ---
 
@@ -297,154 +358,91 @@
 
 ```
 ┌─────────────────┐       ┌─────────────────┐
-│     USERS       │       │     TASKS       │
+│     USERS       │       │   TASK_GROUPS   │
 ├─────────────────┤       ├─────────────────┤
 │ id (PK)         │◀──┐   │ id (PK)         │
-│ email           │   │   │ title           │
-│ name            │   │   │ content         │
-│ picture_url     │   │   │ point           │
-│ password_hash  │   │   │ priority        │
-│ role           │   └───│ assigner_id (FK)│
-│ enabled        │       │ assignee_id (FK)│
-│ created_at      │       │ status          │
-│ updated_at      │       │ start_time      │
-└─────────────────┘       │ end_time        │
-                           │ created_at      │
-                           │ updated_at      │
-                           │ completed_at    │
-                           │ cancelled_at    │
-                           └─────────────────┘
-                                   │
-                                   ▼
-                           ┌─────────────────┐
-                           │  TASK_HISTORY   │
-                           ├─────────────────┤
-                           │ id (PK)         │
-                           │ task_id (FK)   │
-                           │ user_id (FK)   │
-                           │ action         │
-                           │ old_status     │
-                           │ new_status     │
-                           │ created_at     │
-                           └─────────────────┘
-```
-
-### Table Definitions
-
-#### users
-```sql
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) NOT NULL UNIQUE,
-    name VARCHAR(255),
-    picture_url VARCHAR(500),
-    password_hash VARCHAR(500),
-    role VARCHAR(50) NOT NULL DEFAULT 'USER',
-    enabled BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    last_login_at TIMESTAMP WITH TIME ZONE
-);
-```
-
-#### tasks
-```sql
-CREATE TABLE tasks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    title VARCHAR(255) NOT NULL,
-    content TEXT,
-    point INTEGER NOT NULL DEFAULT 0,
-    priority VARCHAR(20) NOT NULL,
-    status VARCHAR(20) NOT NULL,
-    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    assigner_id UUID NOT NULL REFERENCES users(id),
-    assignee_id UUID NOT NULL REFERENCES users(id),
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    completed_at TIMESTAMP WITH TIME ZONE,
-    cancelled_at TIMESTAMP WITH TIME ZONE,
-    cancel_reason TEXT
-);
+│ email           │   │   │ name            │
+│ name            │   └───│ owner_id (FK)   │
+│ role            │       │ created_at      │
+│ enabled         │       └────────┬────────┘
+│ created_at      │                │
+└────────┬────────┘                │
+         │              ┌──────────▼────────┐
+         │              │ TASK_GROUP_MEMBERS│
+         │              ├───────────────────┤
+         │              │ id (PK)           │
+         └─────────────▶│ user_id (FK)      │
+                        │ group_id (FK)     │
+                        │ role (ADMIN/MEMBER│
+                        └───────────────────┘
+                                 │
+                        ┌────────▼────────┐
+                        │     TASKS       │
+                        ├─────────────────┤
+                        │ id (PK)         │
+                        │ title           │
+                        │ status          │
+                        │ priority        │
+                        │ assigner_id(FK) │
+                        │ assignee_id(FK) │
+                        │ group_id (FK)   │
+                        │ start_time      │
+                        │ end_time        │
+                        └────────┬────────┘
+                                 │
+                        ┌────────▼────────┐
+                        │  TASK_HISTORY   │
+                        ├─────────────────┤
+                        │ id (PK)         │
+                        │ task_id (FK)    │
+                        │ user_id (FK)    │
+                        │ action          │
+                        │ old_status      │
+                        │ new_status      │
+                        │ changes (JSONB) │
+                        └─────────────────┘
 ```
 
 ---
 
 ## API Specification
 
-### Authentication API
+### Auth Response (Login/Register)
 
-#### POST /api/auth/register
-Đăng ký bằng email và mật khẩu.
-
-**Request:**
-```json
-{
-  "name": "User Name",
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-#### POST /api/auth/login
-Đăng nhập bằng email và mật khẩu.
-
-**Request:**
-```json
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-**Response:**
 ```json
 {
   "success": true,
   "data": {
-    "accessToken": "JWT token",
+    "accessToken": "JWT...",
     "tokenType": "Bearer",
     "expiresIn": 3600,
+    "userId": "uuid",
     "email": "user@example.com",
     "name": "User Name",
-    "pictureUrl": "https://..."
+    "role": "USER"
   }
 }
 ```
 
-### Task API
+> `role` = `"USER"` hoặc `"ADMIN"`. Frontend dùng để hiện/ẩn menu Quản trị.
 
-#### POST /api/tasks
-Tạo công việc mới.
+### Admin Endpoints
 
-#### GET /api/tasks/my
-Lấy danh sách công việc của user hiện tại.
+```
+PATCH /api/users/{id}/enabled   → Bật/tắt tài khoản (cần role ADMIN)
+PATCH /api/users/{id}/role      → Đổi role user (cần role ADMIN)
+```
 
-#### GET /api/tasks/assigned
-Lấy công việc được giao.
+### Group Endpoints
 
-#### GET /api/tasks/created
-Lấy công việc đã tạo.
-
-#### GET /api/tasks/{id}
-Lấy chi tiết công việc.
-
-#### PUT /api/tasks/{id}
-Cập nhật công việc.
-
-#### PATCH /api/tasks/{id}/status
-Cập nhật trạng thái.
-
-#### PATCH /api/tasks/{id}/assign
-Giao lại công việc.
-
-### User API
-
-#### GET /api/users/me
-Lấy thông tin user hiện tại.
-
-#### GET /api/users
-Lấy danh sách tất cả users.
+```
+GET    /api/groups                              → Nhóm của tôi
+POST   /api/groups                             → Tạo nhóm mới
+GET    /api/groups/{id}/members                → Xem thành viên
+POST   /api/groups/{id}/members                → Thêm thành viên
+PATCH  /api/groups/{id}/members/{uid}/role     → Đổi role thành viên
+DELETE /api/groups/{id}/members/{uid}          → Xóa thành viên
+```
 
 ---
 
@@ -454,48 +452,62 @@ Lấy danh sách tất cả users.
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│  📋 TaskManager              🔔  👤 User Name ▼                │
-├──────────┬───────────────────────────────────────────────────┤
-│          │                                                   │
-│ Dashboard│   Chào mừng, User Name 👋                        │
-│ Tasks    │   Cùng xem công việc hôm nay                      │
-│ Users    │                                                   │
-│          │   ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐    │
-│          │   │ Tổng   │ │ Mới    │ │ Đang   │ │ Hoàn  │    │
-│          │   │  15    │ │   3    │ │ xử lý │ │ Done  │    │
-│          │   └────────┘ └────────┘ │   5    │ │   7   │    │
-│          │                          └────────┘ └────────┘    │
-│          │                                                   │
-│          │   ⚡ Công việc khẩn cấp                          │
-│          │   ┌────────────────────────────────────────────┐  │
-│          │   │ Review Pull Request #123                   │  │
-│          │   │ Deadline: 15/01/2024 18:00                 │  │
-│          │   └────────────────────────────────────────────┘  │
-│          │                                                   │
-└──────────┴───────────────────────────────────────────────────┘
+│  TaskManager                                    🔔  User ▼     │
+├──────────┬─────────────────────────────────────────────────────┤
+│          │                                                      │
+│ Dashboard│   Chào mừng, User Name                              │
+│ Tasks    │                                                      │
+│ Users    │   ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐     │
+│ Groups   │   │ Tổng   │ │  Mới   │ │ Đang   │ │  Done  │     │
+│ [Quản trị│   │  15    │ │   3    │ │  xử lý │ │   7    │     │
+│  chỉ ADM]│   └────────┘ └────────┘ │   5    │ └────────┘     │
+│          │                          └────────┘                  │
+│ ──────── │                                                      │
+│ User Name│   Task khẩn cấp                                     │
+│ USER/    │   ┌────────────────────────────────────────────┐    │
+│ ADMIN    │   │ Review Pull Request #123   URGENT          │    │
+│ [Logout] │   └────────────────────────────────────────────┘    │
+└──────────┴─────────────────────────────────────────────────────┘
 ```
 
-### Mobile - Task List
+### Desktop - Admin Panel
 
 ```
-┌─────────────────────────┐
-│  🔍 Tìm kiếm...        │
-├─────────────────────────┤
-│ [Tất cả] [Mới] [Xử lý]│
-├─────────────────────────┤
-│ ┌─────────────────────┐│
-│ │ 🔵 Mới    🔴 Khẩn   ││
-│ │ Review Code PR #456  ││
-│ │ 👤 John  📅 15/01   ││
-│ └─────────────────────┘│
-│ ┌─────────────────────┐│
-│ │ 🟡 Chờ   🔵 TB      ││
-│ │ Fix Bug Login Flow   ││
-│ │ 👤 Sarah 📅 16/01   ││
-│ └─────────────────────┘│
-│                         │
-│                   [+]   │
-└─────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│  Quản trị hệ thống                                             │
+├────────────────────────────────────────────────────────────────┤
+│  Danh sách người dùng (25)                                     │
+├───────────────────────┬──────────────┬────────────────────────┤
+│  Nguyen Van A          │  [USER  ▼]  │  [Vô hiệu hóa]        │
+│  a@company.com         │             │                        │
+│  Tham gia: 01/01/2024 │             │                        │
+├───────────────────────┼──────────────┼────────────────────────┤
+│  Tran Thi B  [Bạn]    │  [ADMIN ▼]  │  [disabled - tự mình] │
+│  b@company.com         │             │                        │
+│  Tham gia: 15/01/2024 │             │                        │
+├───────────────────────┼──────────────┼────────────────────────┤
+│  Le Van C    [Vô hiệu]│  [USER  ▼]  │  [Kích hoạt]          │
+│  c@company.com         │             │                        │
+└───────────────────────┴──────────────┴────────────────────────┘
+```
+
+### Desktop - Groups
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  Groups                                                        │
+├────────────────┬───────────────────────────────────────────────┤
+│ Nhóm của tôi  │  Team Alpha                    [Admin badge]  │
+│                │                                               │
+│ [Team Alpha  ] │  [Chọn user ▼] [Member ▼] [+ Thêm]         │
+│  ADMIN         │                                               │
+│ [Team Beta   ] │  ┌────────────────────────────────────────┐  │
+│  MEMBER        │  │ Nguyen Van A   nguyen@...               │  │
+│                │  │                    [ADMIN ▼] [🗑 xóa]  │  │
+│ [+ Tạo nhóm ] │  ├────────────────────────────────────────┤  │
+│                │  │ Tran Thi B    tran@...                  │  │
+│                │  │                    [MEMBER▼] [🗑 xóa]  │  │
+└────────────────┴───────────────────────────────────────────────┘
 ```
 
 ---
@@ -503,75 +515,46 @@ Lấy danh sách tất cả users.
 ## Definition of Done
 
 ### Code Level
-- [ ] Code compiles without errors
-- [ ] Unit tests pass (>80% coverage for core logic)
-- [ ] No critical security vulnerabilities
-- [ ] Code follows style guide
-- [ ] No TODO comments left
+- [x] Code compiles without errors
+- [x] TypeScript type check passes
+- [x] No critical security vulnerabilities
+- [x] Backend enforces all permission checks
 
 ### Functional Level
-- [ ] All acceptance criteria met
-- [ ] All user stories completed
-- [ ] Tested on supported browsers/devices
-- [ ] No blocking bugs
+- [x] All acceptance criteria met
+- [x] Permission checks hoạt động đúng (không hardcode)
+- [x] Admin page ẩn với non-admin user
+- [x] Frontend không hardcode role
 
 ### Technical Level
-- [ ] API documentation updated
-- [ ] Database migrations created
-- [ ] Environment variables documented
-- [ ] Deployment checklist completed
-
-### Review Level
-- [ ] Code review approved
-- [ ] QA sign-off received
-- [ ] PO acceptance confirmed
+- [x] API documentation updated
+- [x] Database migrations created
+- [x] Docs updated (DEVELOPER, PRODUCT_OWNER, USER_GUIDE)
 
 ---
 
 ## Kế Hoạch Phát Triển
 
-### Sprint 1: Core Infrastructure (2 tuần)
+### Sprint 1: Core Infrastructure ✅
+- Backend setup, DB design, Authentication, Docker
 
-| Task | Assigned | Status |
-|------|----------|--------|
-| Backend project setup | Dev | ☐ |
-| Database design | Dev | ☐ |
-| Flyway migrations | Dev | ☐ |
-| User entity & API | Dev | ☐ |
-| Authentication (email/password) | Dev | ☐ |
-| Docker Compose setup | Dev | ☐ |
+### Sprint 2: Task Management ✅
+- Task CRUD, assignment, status flow, Frontend
 
-### Sprint 2: Task Management (2 tuần)
+### Sprint 3: Notifications ✅
+- RabbitMQ, Kafka, Email service, Deadline scheduler
 
-| Task | Assigned | Status |
-|------|----------|--------|
-| Task entity & API | Dev | ☐ |
-| Task CRUD operations | Dev | ☐ |
-| Task assignment | Dev | ☐ |
-| Status update flow | Dev | ☐ |
-| Frontend Web - Task pages | Dev | ☐ |
-| Mobile App - Task screens | Dev | ☐ |
+### Sprint 4: Groups & Authorization ✅
+- Group management (tạo nhóm, thêm/xóa/đổi role thành viên)
+- Phân quyền 2 cấp (System Role + Group Role)
+- Admin Panel (quản lý tài khoản)
+- Fix frontend role (bỏ hardcode USER)
 
-### Sprint 3: Notifications (2 tuần)
-
-| Task | Assigned | Status |
-|------|----------|--------|
-| RabbitMQ setup | Dev | ☐ |
-| Kafka setup | Dev | ☐ |
-| Email service | Dev | ☐ |
-| Task created notification | Dev | ☐ |
-| Deadline warning scheduler | Dev | ☐ |
-| Task done notification | Dev | ☐ |
-
-### Sprint 4: Polish & Deploy (1 tuần)
-
-| Task | Assigned | Status |
-|------|----------|--------|
-| Dashboard stats | Dev | ☐ |
-| Search & filter | Dev | ☐ |
-| Unit tests | Dev | ☐ |
-| Bug fixes | Dev | ☐ |
-| Deployment | Dev | ☐ |
+### Sprint 5: Tiếp theo (đề xuất)
+- Delete group endpoint
+- Task search nâng cao
+- Push notification (mobile)
+- System statistics dashboard cho Admin
 
 ---
 
@@ -579,24 +562,15 @@ Lấy danh sách tất cả users.
 
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
-| Email/password auth issues | High | Medium | Reset mật khẩu hoặc tạo lại tài khoản |
+| Admin bị lock out | High | Low | Cần ≥ 2 admin, không tự vô hiệu hóa mình |
+| Phân quyền sai | High | Low | Backend enforce tất cả, frontend chỉ là UX |
 | Email delivery failures | Medium | Low | Queue retry mechanism |
 | Database performance | Medium | Medium | Connection pooling, indexing |
-| Mobile app rejection | High | Low | Follow App Store guidelines |
-| Security vulnerabilities | High | Low | Regular security audits |
-| Integration failures | Medium | Medium | Comprehensive error handling |
+| Security vulnerabilities | High | Low | @RolesAllowed, @Authenticated enforce ở backend |
 
 ---
 
 ## CI/CD & Deployment
-
-### CI Pipeline
-
-```
-Push/PR → GitHub Actions → Build → Test → Deploy
-                    ↓
-              Docker Image → Registry
-```
 
 ### GitHub Actions Workflows
 
@@ -605,24 +579,12 @@ Push/PR → GitHub Actions → Build → Test → Deploy
 | ci.yml | Push/PR | Build + Test |
 | deploy.yml | Release/Manual | Deploy to production |
 
-### Deployment Environments
+### Environments
 
 | Environment | URL | Purpose |
 |------------|-----|---------|
 | Development | localhost:3000 | Local development |
-| Staging | staging.taskmanagement.com | Pre-production testing |
-| Production | taskmanagement.com | Live environment |
-
-### Secrets Required
-
-| Secret | Description |
-|--------|-------------|
-| DOCKERHUB_USERNAME | Docker Hub username |
-| DOCKERHUB_TOKEN | Docker Hub access token |
-| SERVER_HOST | Production server IP |
-| SERVER_USER | SSH username |
-| SERVER_SSH_KEY | SSH private key |
-| FIREBASE_SERVICE_ACCOUNT | Firebase service account |
+| Production | taskmanagement.com | Live |
 
 ---
 
@@ -630,66 +592,14 @@ Push/PR → GitHub Actions → Build → Test → Deploy
 
 | Term | Definition |
 |------|------------|
+| System Admin | User có `role = "ADMIN"` — quản lý tài khoản toàn hệ thống |
+| Group Admin | User có `role = "ADMIN"` trong một nhóm cụ thể |
 | Assigner | Người tạo/giao công việc |
 | Assignee | Người được giao công việc |
-| Task Status | Trạng thái của công việc (OPEN, PENDING, PROCESS, DONE, CANCEL) |
-| Priority | Mức ưu tiên của công việc |
-| JWT | JSON Web Token - token xác thực |
-| Deadline | Thời hạn hoàn thành công việc |
+| Task Status | OPEN, PENDING, PROCESS, DONE, CANCEL |
+| JWT | JSON Web Token — chứa userId, email, role |
 
 ---
 
-## Project Structure
-
-```
-taskmanagement/
-├── .github/
-│   └── workflows/           # CI/CD pipelines
-│       ├── ci.yml
-│       └── deploy.yml
-├── .env.example            # Environment template
-├── docker-compose.yml       # Infrastructure (dev)
-├── docker-compose.prod.yml # Production
-├── docs/                   # Documentation
-│   ├── DEVELOPER.md
-│   ├── USER_GUIDE.md
-│   └── PRODUCT_OWNER.md
-├── backend/               # Quarkus Backend
-│   ├── src/main/java/     # Java source
-│   ├── src/main/resources/
-│   │   ├── application.yml
-│   │   └── db/migration/
-│   └── pom.xml
-├── frontend-web/          # React Web
-│   ├── src/
-│   └── package.json
-└── frontend-app/          # React Native
-    ├── src/
-    └── package.json
-```
-
----
-
-## Appendix
-
-### Contact
-
-| Role | Name | Email |
-|------|------|-------|
-| Product Owner | [Name] | [email] |
-| Tech Lead | [Name] | [email] |
-| QA Lead | [Name] | [email] |
-
-### References
-
-- Backend Repository: [URL]
-- Frontend Web Repository: [URL]
-- Mobile App Repository: [URL]
-- Design System: [URL]
-- API Documentation: [URL]
-
----
-
-*Document Version: 1.0*
-*Last Updated: May 2024*
-*Document Owner: Product Owner*
+*Document Version: 1.1*
+*Last Updated: 2026-05-30*

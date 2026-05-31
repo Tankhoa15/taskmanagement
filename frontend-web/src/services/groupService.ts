@@ -31,4 +31,8 @@ export const groupService = {
     })
     return response.data.data
   },
+
+  removeMember: async (groupId: string, userId: string): Promise<void> => {
+    await api.delete(`/api/groups/${groupId}/members/${userId}`)
+  },
 }

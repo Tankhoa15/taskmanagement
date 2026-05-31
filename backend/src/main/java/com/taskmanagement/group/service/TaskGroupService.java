@@ -94,6 +94,17 @@ public class TaskGroupService {
         return toMemberDto(member);
     }
 
+    @Transactional
+    public void removeMember(UUID groupId, UUID targetUserId, UUID adminId) {
+        requireAdmin(groupId, adminId);
+        if (adminId.equals(targetUserId)) {
+            throw new BusinessException("You cannot remove yourself from the group", "CANNOT_REMOVE_SELF");
+        }
+        TaskGroupMember member = memberRepository.findByGroupAndUser(groupId, targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Group member", "userId", targetUserId));
+        memberRepository.delete(member);
+    }
+
     public void requireMember(UUID groupId, UUID userId) {
         if (!memberRepository.isMember(groupId, userId)) {
             throw new BusinessException("You are not a member of this group", "GROUP_ACCESS_DENIED");

@@ -4,13 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { taskService } from '../services/taskService'
 import { groupService } from '../services/groupService'
 import { useAuthStore } from '../store/authStore'
+import CommentSection from '../components/CommentSection'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { 
-  ArrowLeft, 
-  Calendar, 
-  User, 
+import {
+  ArrowLeft,
+  Calendar,
+  User,
   Clock,
   CheckCircle,
   XCircle,
@@ -94,7 +95,7 @@ export default function TaskDetailPage() {
   const StatusIcon = statusConfig[task.status].icon
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="mb-6">
         <Link to="/tasks" className="inline-flex items-center text-gray-500 hover:text-gray-700 mb-4">
@@ -266,6 +267,9 @@ export default function TaskDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Comments */}
+      <CommentSection taskId={id!} />
 
       {/* Cancel Modal */}
       {showCancelModal && (

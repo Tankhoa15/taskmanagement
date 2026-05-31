@@ -19,6 +19,10 @@ import org.jboss.logging.Logger;
 import java.util.List;
 import java.util.UUID;
 
+class UpdateLabelsRequest {
+    public List<UUID> labelIds;
+}
+
 @Path("/api/tasks")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -119,12 +123,20 @@ public class TaskController {
     public Response assignTask(@PathParam("id") UUID taskId, @QueryParam("assigneeId") UUID assigneeId) {
         UUID assignerId = extractUserId();
         LOG.infof("Assigning task: %s to: %s by: %s", taskId, assigneeId, assignerId);
-        
+
         TaskDto task = taskService.assignTask(taskId, assigneeId, assignerId);
-        
+
         return Response.ok(ApiResponse.success("Task assigned successfully", task)).build();
     }
-    
+
+    @PATCH
+    @Path("/{id}/labels")
+    public Response updateLabels(@PathParam("id") UUID taskId, UpdateLabelsRequest request) {
+        UUID userId = extractUserId();
+        TaskDto task = taskService.updateTaskLabels(taskId, request.labelIds, userId);
+        return Response.ok(ApiResponse.success("Labels updated", task)).build();
+    }
+
     private UUID extractUserId() {
         String userIdStr = jwt.getSubject();
         return UUID.fromString(userIdStr);

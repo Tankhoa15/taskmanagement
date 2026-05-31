@@ -45,4 +45,22 @@ public class UserService {
             userRepository.persist(user);
         });
     }
+
+    @Transactional
+    public Optional<UserDto> setUserEnabled(UUID userId, boolean enabled) {
+        return userRepository.findByIdOptional(userId).map(user -> {
+            user.setEnabled(enabled);
+            userRepository.persist(user);
+            return UserMapper.INSTANCE.toDto(user);
+        });
+    }
+
+    @Transactional
+    public Optional<UserDto> updateUserRole(UUID userId, String role) {
+        return userRepository.findByIdOptional(userId).map(user -> {
+            user.setRole(role);
+            userRepository.persist(user);
+            return UserMapper.INSTANCE.toDto(user);
+        });
+    }
 }
